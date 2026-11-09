@@ -1,58 +1,117 @@
-/* Luma Ambient — companion theme for Luma Lyrics
- * Goal: declutter Spotify's native UI and keep focus on playback/content.
- * Install alongside Luma Lyrics; works independently.
+/* Luma Ambient 1.0.0
+ * Standalone Spicetify theme. Keep selectors narrow and lyric-neutral.
  */
 
-/* Calm, consistent surfaces */
+/* Design tokens: color.ini supplies the active scheme through --spice-* vars. */
 :root {
-  --luma-ambient-radius: 14px;
+  color-scheme: dark;
+  --luma-bg: var(--spice-main, #141218);
+  --luma-sidebar: var(--spice-sidebar, #17141c);
+  --luma-player: var(--spice-player, #1d1b20);
+  --luma-surface: var(--spice-card, #211f26);
+  --luma-surface-raised: var(--spice-main-elevated, #1d1b20);
+  --luma-surface-hover: var(--spice-highlight, #2b2930);
+  --luma-surface-selected: var(--spice-highlight-elevated, #36343b);
+  --luma-text: var(--spice-text, #f3edf7);
+  --luma-muted: var(--spice-subtext, #cac4d0);
+  --luma-accent: var(--spice-button, #d0bcff);
+  --luma-border: color-mix(in srgb, var(--luma-text) 9%, transparent);
+  --luma-border-strong: color-mix(in srgb, var(--luma-text) 16%, transparent);
+  --luma-space-1: 4px;
+  --luma-space-2: 8px;
+  --luma-space-3: 12px;
+  --luma-space-4: 16px;
+  --luma-space-5: 20px;
+  --luma-radius-sm: 8px;
+  --luma-radius-md: 12px;
+  --luma-radius-lg: 16px;
+  --luma-radius-pill: 999px;
 }
 
-/* Reduce visual noise in the main view */
-.Root__main-view .main-home-homeHeader,
-.Root__main-view [data-testid="home-page"] .main-gridContainer-gridContainer {
-  scroll-padding-top: 8px;
+/* Main app regions */
+.Root__nav-bar {
+  background: var(--luma-sidebar);
+  border-inline-end: 1px solid var(--luma-border);
 }
 
-/* Softer cards */
-.main-card-card,
-.main-heroCard-card,
-[class*="Card"] {
-  border-radius: var(--luma-ambient-radius) !important;
+.Root__main-view {
+  background: var(--luma-bg);
 }
 
-/* Now-playing bar: cleaner spacing, less chrome */
 .main-nowPlayingBar-nowPlayingBar {
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: var(--luma-player);
+  border-top: 1px solid var(--luma-border);
+  box-shadow: 0 -8px 28px rgb(0 0 0 / 10%);
 }
+
+.main-globalNav-searchInputContainer .main-topBar-searchBar {
+  background: var(--luma-surface-raised);
+  border: 1px solid var(--luma-border);
+  border-radius: var(--luma-radius-pill);
+  box-shadow: none;
+}
+
+.main-globalNav-searchInputContainer .main-topBar-searchBar:focus-within {
+  border-color: var(--luma-accent);
+}
+
+/* Content surfaces: avoid wildcard card selectors so extension UIs are untouched. */
+.main-card-card,
+.main-heroCard-card {
+  border: 1px solid transparent;
+  border-radius: var(--luma-radius-lg);
+  box-shadow: none;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.main-card-card:hover,
+.main-heroCard-card:hover {
+  background: var(--luma-surface-hover);
+  border-color: var(--luma-border);
+}
+
+.main-trackList-trackListRow {
+  border-radius: var(--luma-radius-sm);
+  transition: background-color 120ms ease;
+}
+
+.main-trackList-trackListRow:hover {
+  background: var(--luma-surface-hover);
+}
+
+.main-trackList-trackListRow[aria-selected="true"] {
+  background: var(--luma-surface-selected);
+}
+
+/* Playback layout: preserve the transport, seek bar, device and volume controls. */
 .main-nowPlayingBar-center .playback-bar {
-  max-width: 680px;
+  max-width: 720px;
 }
+
 .main-nowPlayingWidget-trackInfo {
   min-width: 0;
 }
 
-/* Sidebar: reduce clutter, keep essentials readable */
-.Root__nav-bar {
-  border-radius: 0 !important;
+.main-nowPlayingBar-nowPlayingBar button {
+  border-radius: var(--luma-radius-sm);
 }
+
+/* Library spacing stays compact without removing navigation or library actions. */
 .main-yourLibraryX-libraryContainer {
-  padding-top: 4px;
+  padding-top: var(--luma-space-2);
 }
 
-/* Subtle scrollbars */
-.os-scrollbar-handle,
-* {
-  scrollbar-width: thin;
+/* Visible keyboard focus; the outline is not color-only state communication. */
+:where(button, a, input, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--luma-accent);
+  outline-offset: 2px;
 }
 
-/* Tone down promotional/busy surfaces where safe */
-.main-leaderboardComponent-container,
-.main-topBar-background {
-  opacity: 0.98;
-}
-
-/* Keep Luma Lyrics overlay unaffected (it uses #luma-root with very high z-index) */
-#luma-root {
-  all: revert-layer;
+/* Keep Spotify's own lyric views and extension surfaces outside this theme's rules. */
+@media (prefers-reduced-motion: reduce) {
+  .main-card-card,
+  .main-heroCard-card,
+  .main-trackList-trackListRow {
+    transition: none;
+  }
 }
