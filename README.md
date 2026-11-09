@@ -55,7 +55,7 @@ To undo it, remove the block between the `LUMA DECLUTTER START` and `LUMA DECLUT
 
 ### What is compatible
 
-The intended project is [NMWplays/Liquify](https://github.com/NMWplays/Liquify). Its current main branch identifies **Liquid Lyrics** as its official lyrics extension. Liquify's stylesheet includes dedicated lyric rules such as `.lyrics-lyrics-background` and `.lyrics-lyrics-contentContainer`; its runtime also exposes a Themed Lyrics setting. The Liquify README on older revisions mentions Beautiful Lyrics, Spicy Lyrics, and Lucid Lyrics, but the current V2 source and onboarding specifically identify Liquid Lyrics as the officially supported extension.
+The intended project is [NMWplays/Liquify](https://github.com/NMWplays/Liquify). Its current README lists **Beautiful Lyrics**, **Spicy Lyrics**, and **Lucid Lyrics** as supported by default. However, the current main-branch V2 runtime's onboarding identifies **Liquid Lyrics** as the official and only officially supported lyrics extension, and its stylesheet includes dedicated lyric rules such as `.lyrics-lyrics-background` and `.lyrics-lyrics-contentContainer` plus a Themed Lyrics setting. Because the README and V2 runtime describe support differently, this add-on makes no compatibility claim for the other lyrics extensions: preserve Liquify's own lyric CSS and verify each extension in Spotify.
 
 Luma Ambient's `liquify-addon.css` is deliberately additive. It styles only a small set of Spotify shell surfaces and does not target:
 
