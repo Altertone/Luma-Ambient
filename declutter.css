@@ -1,0 +1,12 @@
+/* LUMA DECLUTTER START
+ * Optional compact spacing. Append this block to the active theme's user.css.
+ * Remove this block to restore the default spacing.
+ */
+.Root__main-view .main-gridContainer-gridContainer {
+  row-gap: 16px;
+}
+
+.Root__main-view .main-home-homeHeader {
+  padding-block-end: 12px;
+}
+/* LUMA DECLUTTER END */
