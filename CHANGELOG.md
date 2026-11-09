@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 — 2026-11-09
+
+- Added an artwork-reactive Material 3 color layer that consumes Luma Lyrics desktop palette tokens, with static theme fallbacks.
+- Added Material Symbols Rounded replacements for labelled playback controls.
+- Simplified Spotify's Now Playing sidebar by hiding Credits, On tour, Merch, and Next in queue while retaining the player and lyrics preview.
+- Expanded compatibility and manual-test documentation for the new integration.
+
+
 ## 1.0.0 — 2026-11-09
 
 - Reworked the theme around consistent surface, text, border, spacing, and radius tokens.
