@@ -51,37 +51,36 @@ The core theme already reduces visual noise without hiding controls. For a sligh
 
 To undo it, remove the block between the `LUMA DECLUTTER START` and `LUMA DECLUTTER END` comments from `user.css` and apply again. No essential controls or navigation items are hidden.
 
-## Liquify compatibility
+## Luma Lyrics compatibility
 
-### What is compatible
+Luma Ambient includes a dedicated styling layer for your [Luma Lyrics](https://github.com/Shahisha1/Luma-Lyrics) Spicetify extension. When Luma Ambient is active, the extension's fullscreen lyrics view and settings panel automatically pick up the theme's restrained surfaces and typography.
 
-The intended project is [NMWplays/Liquify](https://github.com/NMWplays/Liquify). Its current README lists **Beautiful Lyrics**, **Spicy Lyrics**, and **Lucid Lyrics** as supported by default. However, the current main-branch V2 runtime's onboarding identifies **Liquid Lyrics** as the official and only officially supported lyrics extension, and its stylesheet includes dedicated lyric rules such as `.lyrics-lyrics-background` and `.lyrics-lyrics-contentContainer` plus a Themed Lyrics setting. Because the README and V2 runtime describe support differently, this add-on makes no compatibility claim for the other lyrics extensions: preserve Liquify's own lyric CSS and verify each extension in Spotify.
+### What the integration changes
 
-Luma Ambient's `liquify-addon.css` is deliberately additive. It styles only a small set of Spotify shell surfaces and does not target:
+- Styles the Luma Lyrics toolbar, player controls, settings panel, form controls, and lyric typography.
+- Uses Luma Lyrics' artwork-derived `--accent` and `--accent-rgb` variables for the active word, playback button, focus ring, and small accents. The highlight can therefore adapt to the current album artwork.
+- Keeps the extension's own artwork backdrop, lyric timing, word-by-word highlighting, scroll behavior, translations, romanization, and player logic intact.
+- Does not require enabling Luma Lyrics' optional **Desktop colors** setting. That setting remains optional and is controlled by Luma Lyrics itself.
+- Is scoped to `#luma-root`; it does not globally restyle other extensions or change their lyric interfaces.
 
-- `.lyrics-lyrics-background` or `.lyrics-lyrics-contentContainer`
-- Liquify's `.liquify-*` runtime elements or settings UI
-- Liquid Lyrics' extension-owned views, controls, fullscreen/cinema modes, romanization, translation, or sync editor
+### Install / update
 
-This is a non-interference design, not a claim that Luma Ambient adds lyric functionality or has been runtime-tested with every extension version.
-
-### Use Luma Ambient styling while Liquify is active
-
-1. Keep **Liquify** selected as your active Spicetify theme. Do not set `current_theme` to Luma Ambient.
-2. Find the active Liquify theme's local `user.css` in your Spicetify Themes directory. If Liquify was installed through a manager, locate the actual local theme folder used by Spicetify.
-3. Back up that file.
-4. Append the contents of [`liquify-addon.css`](liquify-addon.css) to the end of Liquify's `user.css`. Do not replace Liquify's stylesheet or its `theme.js`.
-5. Run:
+1. Update Luma Ambient in your Spicetify Themes folder so its `user.css` contains the Luma Lyrics integration block.
+2. Keep **Luma Ambient** selected as your active Spicetify theme.
+3. Make sure `luma-lyrics.js` is installed and enabled as a Spicetify extension.
+4. Apply and reload Spotify:
 
    ```bash
    spicetify apply
    ```
 
-6. Keep Liquify's own Liquid Lyrics integration and Themed Lyrics setting enabled/configured as desired. Luma Ambient does not modify them.
+5. Open Luma Lyrics from its playbar button. The theme integration is automatic; no CSS needs to be pasted into the extension or its repository.
 
-To remove the add-on, remove the appended block marked `LUMA AMBIENT LIQUIFY ADD-ON` from Liquify's `user.css`, then apply again.
+If you previously copied an older version of Luma Ambient into your theme folder, replace its `user.css` with the current repository version before applying.
 
-**Important:** Liquify's published manifest currently points its stylesheet and JavaScript to hosted URLs. Depending on how you installed it, a local edit may be overwritten by a theme update or reinstall. Keep a backup and re-append the add-on after updating Liquify. The compatibility stylesheet is not a second active Spicetify theme.
+### Compatibility boundary
+
+This is a CSS integration with the current Luma Lyrics v2 DOM structure, not a fork or modification of the extension. If Luma Lyrics changes its `#luma-root` markup or class names in a future update, some styling may need to be refreshed. The theme does not modify the extension's JavaScript, settings storage, LRCLIB requests, or playback controls.
 
 ## Manual test matrix
 
