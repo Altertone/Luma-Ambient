@@ -2,7 +2,7 @@
 
 A quieter Spotify desktop interface for Spicetify. Luma Ambient keeps the existing muted-violet identity while giving the player, navigation, library, and content surfaces a more consistent hierarchy.
 
-> **Integration model:** Luma Ambient is a standalone Spicetify theme. It also ships a separate, additive CSS layer for people who want to keep **Liquify** active. Spotify/Spicetify applies one theme at a time; the Liquify add-on is not a second theme and does not replace Liquify's files.
+Luma Ambient is a standalone Spicetify theme with built-in, automatically applied CSS styling for the separate Luma Lyrics extension.
 
 ## Features
 
@@ -12,7 +12,7 @@ A quieter Spotify desktop interface for Spicetify. Luma Ambient keeps the existi
 - Essential navigation, search, playback, focus indicators, and selected states remain visible.
 - Reduced-motion support and no unnecessary animated effects.
 - Optional compact-spacing rules in `declutter.css`.
-- Liquify add-on scoped away from Liquify's own classes and all lyric interfaces.
+- Native Luma Lyrics styling scoped to its fullscreen overlay, player controls, settings, and artwork-derived accent.
 
 ## Preview
 
