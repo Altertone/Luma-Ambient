@@ -1,23 +1,24 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,500,0,0");
-/* Luma Ambient 1.0.0
+/* Luma Ambient 1.2.0
  * Standalone Spicetify theme. Keep selectors narrow and lyric-neutral.
  */
 
 /* Design tokens: color.ini supplies the active scheme through --spice-* vars. */
 :root {
   color-scheme: dark;
-  --luma-bg: var(--spice-main, #141218);
-  --luma-sidebar: var(--spice-sidebar, #17141c);
-  --luma-player: var(--spice-player, #1d1b20);
-  --luma-surface: var(--spice-card, #211f26);
-  --luma-surface-raised: var(--spice-main-elevated, #1d1b20);
-  --luma-surface-hover: var(--spice-highlight, #2b2930);
-  --luma-surface-selected: var(--spice-highlight-elevated, #36343b);
-  --luma-text: var(--spice-text, #f3edf7);
-  --luma-muted: var(--spice-subtext, #cac4d0);
-  --luma-accent: var(--spice-button, #d0bcff);
-  --luma-border: color-mix(in srgb, var(--luma-text) 9%, transparent);
-  --luma-border-strong: color-mix(in srgb, var(--luma-text) 16%, transparent);
+  --ambient-bg: var(--spice-main, #141218);
+  --ambient-sidebar: var(--spice-sidebar, #17141c);
+  --ambient-player: var(--spice-player, #1d1b20);
+  --ambient-surface: var(--spice-card, #211f26);
+  --ambient-surface-raised: var(--spice-main-elevated, #1d1b20);
+  --ambient-surface-hover: var(--spice-highlight, #2b2930);
+  --ambient-surface-selected: var(--spice-highlight-elevated, #36343b);
+  --ambient-text: var(--spice-text, #f3edf7);
+  --ambient-muted: var(--spice-subtext, #cac4d0);
+  --ambient-accent: var(--spice-button, #d0bcff);
+  --ambient-on-accent: var(--luma-on-primary, #241a30);
+  --ambient-border: color-mix(in srgb, var(--ambient-text) 12%, transparent);
+  --ambient-border-strong: color-mix(in srgb, var(--ambient-text) 22%, transparent);
   --luma-space-1: 4px;
   --luma-space-2: 8px;
   --luma-space-3: 12px;
@@ -31,29 +32,29 @@
 
 /* Main app regions */
 .Root__nav-bar {
-  background: var(--luma-sidebar);
-  border-inline-end: 1px solid var(--luma-border);
+  background: var(--ambient-sidebar);
+  border-inline-end: 1px solid var(--ambient-border);
 }
 
 .Root__main-view {
-  background: var(--luma-bg);
+  background: var(--ambient-bg);
 }
 
 .main-nowPlayingBar-nowPlayingBar {
-  background: var(--luma-player);
-  border-top: 1px solid var(--luma-border);
+  background: var(--ambient-player);
+  border-top: 1px solid var(--ambient-border);
   box-shadow: 0 -8px 28px rgb(0 0 0 / 10%);
 }
 
 .main-globalNav-searchInputContainer .main-topBar-searchBar {
-  background: var(--luma-surface-raised);
-  border: 1px solid var(--luma-border);
+  background: var(--ambient-surface-raised);
+  border: 1px solid var(--ambient-border);
   border-radius: var(--luma-radius-pill);
   box-shadow: none;
 }
 
 .main-globalNav-searchInputContainer .main-topBar-searchBar:focus-within {
-  border-color: var(--luma-accent);
+  border-color: var(--ambient-accent);
 }
 
 /* Content surfaces: avoid wildcard card selectors so extension UIs are untouched. */
@@ -67,8 +68,8 @@
 
 .main-card-card:hover,
 .main-heroCard-card:hover {
-  background: var(--luma-surface-hover);
-  border-color: var(--luma-border);
+  background: var(--ambient-surface-hover);
+  border-color: var(--ambient-border);
 }
 
 .main-trackList-trackListRow {
@@ -77,11 +78,11 @@
 }
 
 .main-trackList-trackListRow:hover {
-  background: var(--luma-surface-hover);
+  background: var(--ambient-surface-hover);
 }
 
 .main-trackList-trackListRow[aria-selected="true"] {
-  background: var(--luma-surface-selected);
+  background: var(--ambient-surface-selected);
 }
 
 /* Playback layout: preserve the transport, seek bar, device and volume controls. */
@@ -104,7 +105,7 @@
 
 /* Visible keyboard focus; the outline is not color-only state communication. */
 :where(button, a, input, [role="button"], [tabindex]):focus-visible {
-  outline: 2px solid var(--luma-accent);
+  outline: 2px solid var(--ambient-accent);
   outline-offset: 2px;
 }
 
@@ -295,67 +296,95 @@
 
 
 /* --------------------------------------------------------------------------
-   Luma Material — artwork-reactive Material 3 surfaces
-   Luma Lyrics publishes these --luma-* tokens when its Desktop colors option
-   is enabled. Static fallbacks keep the theme complete when the extension is
-   closed or artwork sampling is unavailable.
+   Material 3 integration
+   Luma Lyrics publishes artwork-derived --luma-* values and maps them to
+   Spotify's --spice-* variables only while Desktop colors is enabled. Read
+   the --spice-* interface here so the extension setting remains authoritative.
    -------------------------------------------------------------------------- */
 :root {
-  --luma-primary: var(--spice-button, #d0bcff);
-  --luma-on-primary: #241a30;
-  --luma-surface: var(--spice-main, #141218);
-  --luma-surface-low: var(--spice-sidebar, #17141c);
-  --luma-surface-container: var(--spice-card, #211f26);
-  --luma-surface-high: var(--spice-highlight, #2b2930);
-  --luma-material-border: color-mix(in srgb, var(--luma-primary) 20%, transparent);
+  --ambient-primary: var(--spice-button, #d0bcff);
+  --ambient-on-primary: var(--luma-on-primary, #241a30);
+  --ambient-main: var(--spice-main, #141218);
+  --ambient-sidebar: var(--spice-sidebar, #17141c);
+  --ambient-player: var(--spice-player, #1d1b20);
+  --ambient-card: var(--spice-card, #211f26);
+  --ambient-highlight: var(--spice-highlight, #2b2930);
+  --ambient-highlight-strong: var(--spice-highlight-elevated, #36343b);
+  --ambient-state-hover: color-mix(in srgb, var(--ambient-primary) 8%, var(--ambient-card));
+  --ambient-state-selected: color-mix(in srgb, var(--ambient-primary) 14%, var(--ambient-player));
+  --ambient-foreground: var(--spice-text, #f3edf7);
+  --ambient-muted-foreground: var(--spice-subtext, #cac4d0);
+  --ambient-outline: color-mix(in srgb, var(--ambient-foreground) 18%, transparent);
+  --ambient-outline-variant: color-mix(in srgb, var(--ambient-foreground) 11%, transparent);
+  --ambient-sidebar-hidden: none;
 }
+
 .Root__main-view,
 .Root__nav-bar,
-.main-nowPlayingBar-nowPlayingBar {
-  transition: background-color 420ms cubic-bezier(.2, 0, 0, 1), color 260ms ease;
+.main-nowPlayingBar-nowPlayingBar,
+.main-card-card,
+.main-heroCard-card,
+.main-trackList-trackListRow,
+.main-globalNav-searchInputContainer .main-topBar-searchBar {
+  transition: background-color 220ms ease, border-color 220ms ease, color 180ms ease;
 }
-.Root__nav-bar { background: var(--luma-surface-low); }
-.Root__main-view { background: var(--luma-surface); }
-.main-nowPlayingBar-nowPlayingBar {
-  background: var(--luma-surface-container);
-  border-top-color: var(--luma-material-border);
+
+.Root__nav-bar {
+  background: var(--ambient-sidebar);
+  border-inline-end: 1px solid var(--ambient-outline-variant);
 }
+.Root__main-view { background: var(--ambient-main); color: var(--ambient-foreground); }
+.main-nowPlayingBar-nowPlayingBar {
+  background: var(--ambient-player);
+  border-top-color: var(--ambient-outline-variant);
+}
+.main-card-card,
+.main-heroCard-card { color: var(--ambient-foreground); }
 .main-card-card:hover,
 .main-heroCard-card:hover,
+.main-trackList-trackListRow:hover {
+  background: var(--ambient-state-hover);
+}
 .main-trackList-trackListRow[aria-selected="true"] {
-  background: color-mix(in srgb, var(--luma-primary) 10%, var(--luma-surface-container));
+  background: var(--ambient-state-selected);
+  color: var(--ambient-foreground);
 }
 .main-globalNav-searchInputContainer .main-topBar-searchBar:focus-within,
 .main-nowPlayingBar-nowPlayingBar button:focus-visible {
-  border-color: var(--luma-primary);
-  outline-color: var(--luma-primary);
+  border-color: var(--ambient-primary);
+  outline-color: var(--ambient-primary);
 }
 
-/* Minimal Now Playing sidebar: preserve the player and Spotify's lyrics card.
-   These structural selectors avoid translated headings and generated classes.
-   Supports Spotify's current NPV v2 panel and the older NPV v1 fallback. */
-:root [data-npv-root] [data-overlayscrollbars-viewport] > div > :nth-child(2) > div > section:has([data-encore-id="listRow"]):not(:has(img)),
-:root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has([data-encore-id="listRow"]):not(:has(ul)),
-:root [data-npv-root] [data-overlayscrollbars-viewport] > div > :nth-child(2) > div > div:has(a[href^="/concert/"]),
+/* Sidebar cards matched by their destination or role; the player and lyrics
+   preview are deliberately not selected. Set this variable to `block` in a
+   local CSS override to restore the hidden sections. */
+:root [data-npv-root] a[href^="/concert/"],
+:root .NowPlayingView a[href^="/concert/"],
+:root [data-npv-root] a[href*="shop.spotify.com"],
+:root .NowPlayingView a[href*="shop.spotify.com"],
+:root [data-npv-root] > div > div:has(a[href^="/concert/"]),
+:root [data-npv-root] > div > div:has(a[href*="shop.spotify.com"]),
 :root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has(a[href^="/concert/"]),
-:root [data-npv-root] [data-overlayscrollbars-viewport] > div > :nth-child(2) > div > div:has(a[href*="shop.spotify.com"]),
 :root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has(a[href*="shop.spotify.com"]),
-:root [data-npv-root] [data-overlayscrollbars-viewport] > div > :nth-child(2) > div:last-child:has(> section [data-encore-id="listRow"], > section a[href="/search"]),
+:root [data-npv-root] > div > div > section:has([data-encore-id="listRow"]):not(:has(img)),
+:root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has([data-encore-id="listRow"]):not(:has(img)),
+:root [data-npv-root] > div > div > div:has(> ul):not(:has(a[href*="shop.spotify.com"])),
 :root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has(> ul):not(:has(a[href*="shop.spotify.com"])) {
-  display: none !important;
+  display: var(--ambient-sidebar-hidden) !important;
 }
 
-/* Material Symbols Rounded for transport controls. Only replace known,
-   labelled controls; all other Spotify SVG artwork remains untouched. */
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Play"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Previous"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Next"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Shuffle"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Repeat"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Like"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Add to Liked Songs"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Volume"]::before {
+/* Transport glyphs are drawn over Spotify's existing buttons. SVGs remain in
+   the accessibility tree and the buttons keep their native labels, titles,
+   focus, hover and click handlers. */
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Play"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Previous"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Next"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Shuffle"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Repeat"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Like"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Add to Liked Songs"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Volume"]::after {
   display: inline-grid;
   place-items: center;
   font-family: "Material Symbols Rounded";
@@ -366,16 +395,17 @@
   font-feature-settings: "liga";
   -webkit-font-feature-settings: "liga";
   color: currentColor;
+  pointer-events: none;
 }
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Play"]::before { content: "play_arrow"; }
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"]::before { content: "pause"; }
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Previous"]::before { content: "skip_previous"; }
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Next"]::before { content: "skip_next"; }
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Shuffle"]::before { content: "shuffle"; }
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Repeat"]::before { content: "repeat"; }
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Like"]::before,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Add to Liked Songs"]::before { content: "favorite"; }
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Volume"]::before { content: "volume_up"; }
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Play"]::after { content: "play_arrow"; }
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"]::after { content: "pause"; }
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Previous"]::after { content: "skip_previous"; }
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Next"]::after { content: "skip_next"; }
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Shuffle"]::after { content: "shuffle"; }
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Repeat"]::after { content: "repeat"; }
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Like"]::after,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Add to Liked Songs"]::after { content: "favorite"; }
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Volume"]::after { content: "volume_up"; }
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Play"] svg,
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"] svg,
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Previous"] svg,
@@ -385,17 +415,41 @@
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Like"] svg,
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Add to Liked Songs"] svg,
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Volume"] svg {
-  display: none !important;
+  position: absolute;
+  opacity: 0;
+}
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Play"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Previous"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Next"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Shuffle"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Repeat"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Like"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Add to Liked Songs"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Volume"] {
+  position: relative;
+  color: var(--ambient-foreground);
 }
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Play"]:hover,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"]:hover {
-  color: var(--luma-primary);
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"]:hover,
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Shuffle"][aria-pressed="true"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Repeat"][aria-pressed="true"],
+.main-nowPlayingBar-nowPlayingBar button[aria-label="Like"][aria-pressed="true"] {
+  color: var(--ambient-primary);
+}
+.main-nowPlayingBar-nowPlayingBar button[data-testid="play-button"] {
+  background: var(--ambient-primary);
+  color: var(--ambient-on-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .Root__main-view,
   .Root__nav-bar,
-  .main-nowPlayingBar-nowPlayingBar {
+  .main-nowPlayingBar-nowPlayingBar,
+  .main-card-card,
+  .main-heroCard-card,
+  .main-trackList-trackListRow,
+  .main-globalNav-searchInputContainer .main-topBar-searchBar {
     transition: none;
   }
 }

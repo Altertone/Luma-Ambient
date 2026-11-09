@@ -7,9 +7,9 @@ Luma Ambient is a standalone Spicetify theme with built-in, automatically applie
 ## Features
 
 - Two coordinated fallback schemes: **Ambient** and **Ambient Soft**.
-- Artwork-reactive Material 3 colors shared from Luma Lyrics when its **Desktop colors** setting is enabled.
+- Artwork-reactive Material 3 colors from Luma Lyrics when its **Desktop colors** setting is enabled; both Ambient schemes remain the standalone fallback.
 - Material Symbols Rounded icons for labelled playback controls.
-- A minimal Now Playing sidebar that keeps the player and lyrics preview while hiding Credits, On tour, Merch, and Next in queue.
+- A minimal Now Playing sidebar that preserves the player and lyrics preview and hides supported Credits, On tour, Merch, and queue sections.
 - Consistent surface, text, border, spacing, and radius tokens.
 - Calmer navigation, cards, track rows, search, and now-playing bar.
 - Essential navigation, search, playback, focus indicators, and selected states remain visible.
@@ -50,7 +50,13 @@ The scheme names correspond to the sections in `color.ini`.
 
 ## Minimal Now Playing sidebar
 
-The theme keeps the current track/player area and Spotify's lyrics preview while hiding Credits, On tour, Merch, and Next in queue. The selectors use Spotify's structural attributes and link destinations rather than translated heading text or short-lived generated class names. Spotify can still change its markup in a future update, so verify this panel after major client updates.
+The theme preserves the current track/player area and Spotify's lyrics preview. It hides supported Credits, On tour, Merch, and queue sections in the current Now Playing panel markup. These sections do not all have stable semantic identifiers, so the CSS uses a mix of link destinations and panel structure; Spotify can change that structure. Verify the panel after client updates.
+
+The theme is CSS-only and has no settings interface. To show the sections again, add this rule to the end of `user.css` and run `spicetify apply`:
+
+```css
+:root { --ambient-sidebar-hidden: block; }
+```
 
 ## Optional decluttering
 
@@ -65,10 +71,10 @@ Luma Ambient includes a dedicated styling layer for your [Luma Lyrics](https://g
 ### What the integration changes
 
 - Styles the Luma Lyrics toolbar, player controls, settings panel, form controls, and lyric typography.
-- Uses Luma Lyrics' artwork-derived Material 3 `--luma-*` tokens for the Spotify shell, player, selection states, and accents. The palette updates as the artwork changes.
-- To enable the shared desktop palette, open Luma Lyrics settings and turn on **Desktop colors**. Luma Ambient then consumes the variables published by Luma Lyrics; its fallback palette remains active otherwise.
+- Luma Lyrics derives a tonal palette from the current artwork and publishes it through Spotify's `--spice-*` color variables when Desktop colors is enabled. Luma Ambient uses those variables for the app surfaces, player, selection and hover states, and accent. Its selected `color.ini` scheme remains the fallback when Desktop colors is off.
+- To enable the shared desktop palette, open Luma Lyrics settings and turn on **Desktop colors**. The theme follows the extension's setting rather than reading its private palette variables directly.
 - Keeps the extension's own artwork backdrop, lyric timing, word-by-word highlighting, scroll behavior, translations, romanization, and player logic intact.
-- Does not require enabling Luma Lyrics' optional **Desktop colors** setting. That setting remains optional and is controlled by Luma Lyrics itself.
+- Requires the Luma Lyrics **Desktop colors** setting for artwork colors to appear in Spotify; lyrics overlay styling works independently.
 - Is scoped to `#luma-root`; it does not globally restyle other extensions or change their lyric interfaces.
 
 ### Install / update
@@ -124,7 +130,7 @@ Also verify Spotify's current client version and Spicetify version after every m
 
 ## Version
 
-Current development version: **1.1.0**.
+Current development version: **1.2.0**.
 
 See [CHANGELOG.md](CHANGELOG.md) for changes.
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 — 2026-11-09
+
+- Fixed the artwork palette integration to follow Luma Lyrics' **Desktop colors** toggle through Spotify's `--spice-*` variables, avoiding collisions with the extension's private `--luma-*` tokens.
+- Applied palette colors consistently to the main surfaces, player, selected and hovered rows, and playback controls with readable accent foregrounds.
+- Kept native Spotify button labels, SVG accessibility semantics, hover behavior, and click targets while adding Material Symbols glyphs.
+- Narrowed sidebar rules to Now Playing panel content and added a documented CSS visibility override.
+- Added reduced-motion handling for the expanded surface transitions.
+
 ## 1.1.0 — 2026-11-09
 
 - Added an artwork-reactive Material 3 color layer that consumes Luma Lyrics desktop palette tokens, with static theme fallbacks.
