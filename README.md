@@ -50,6 +50,28 @@ This is an illustrative theme preview, not a screenshot of Spotify. Real Spotify
 
 The scheme names correspond to the sections in `color.ini`.
 
+## First-run setup
+
+Luma Ambient ships a tiny companion script, `luma-ambient-setup.js`. On the first launch it shows a minimal prompt asking whether the [Luma Lyrics](https://github.com/Shahisha1/Luma-Lyrics) extension is installed, and adapts the interface to your answer — for example, hiding Spotify's native lyrics button while Luma Lyrics is active so the playbar keeps a single lyrics toggle instead of two.
+
+The theme itself stays CSS-only; the script is optional and only adjusts a few narrow, reversible UI details. Luma Lyrics and Luma Plus are detected automatically afterwards, so the setup stays correct if you install or remove them later without prompting again.
+
+Install the companion script:
+
+1. Copy `luma-ambient-setup.js` into your Spicetify Extensions directory:
+
+   - Linux/macOS: `~/.config/spicetify/Extensions/`
+   - Windows: `%appdata%\spicetify\Extensions\`
+
+2. Enable it and apply:
+
+   ```bash
+   spicetify config extensions luma-ambient-setup.js
+   spicetify apply
+   ```
+
+To change your answer later, open Spotify's console and run `LumaAmbientSetup.ask()`, or `LumaAmbientSetup.reset()` to forget the saved answer. Dismissing the prompt (Escape or clicking outside) leaves everything untouched and asks again on the next launch.
+
 ## Minimal Now Playing sidebar
 
 The theme preserves the current track/player area and Spotify's lyrics preview. It hides supported Credits, On tour, Merch, and queue sections in the current Now Playing panel markup. These sections do not all have stable semantic identifiers, so the CSS uses a mix of link destinations and panel structure; Spotify can change that structure. Verify the panel after client updates.
@@ -144,6 +166,7 @@ Also verify Spotify's current client version and Spicetify version after every m
 - `color.ini` — Spicetify color schemes.
 - `user.css` — standalone theme styling and design tokens.
 - `declutter.css` — optional compact-spacing add-on.
+- `luma-ambient-setup.js` — optional first-run companion extension (see "First-run setup").
 - `manifest.json` — Spicetify Marketplace-style theme metadata.
 - `preview.svg` — illustrative preview.
 
