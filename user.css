@@ -1,0 +1,58 @@
+/* Luma Ambient — companion theme for Luma Lyrics
+ * Goal: declutter Spotify's native UI and keep focus on playback/content.
+ * Install alongside Luma Lyrics; works independently.
+ */
+
+/* Calm, consistent surfaces */
+:root {
+  --luma-ambient-radius: 14px;
+}
+
+/* Reduce visual noise in the main view */
+.Root__main-view .main-home-homeHeader,
+.Root__main-view [data-testid="home-page"] .main-gridContainer-gridContainer {
+  scroll-padding-top: 8px;
+}
+
+/* Softer cards */
+.main-card-card,
+.main-heroCard-card,
+[class*="Card"] {
+  border-radius: var(--luma-ambient-radius) !important;
+}
+
+/* Now-playing bar: cleaner spacing, less chrome */
+.main-nowPlayingBar-nowPlayingBar {
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+.main-nowPlayingBar-center .playback-bar {
+  max-width: 680px;
+}
+.main-nowPlayingWidget-trackInfo {
+  min-width: 0;
+}
+
+/* Sidebar: reduce clutter, keep essentials readable */
+.Root__nav-bar {
+  border-radius: 0 !important;
+}
+.main-yourLibraryX-libraryContainer {
+  padding-top: 4px;
+}
+
+/* Subtle scrollbars */
+.os-scrollbar-handle,
+* {
+  scrollbar-width: thin;
+}
+
+/* Tone down promotional/busy surfaces where safe */
+.main-leaderboardComponent-container,
+.main-topBar-background {
+  opacity: 0.98;
+}
+
+/* Keep Luma Lyrics overlay unaffected (it uses #luma-root with very high z-index) */
+#luma-root {
+  all: revert-layer;
+}

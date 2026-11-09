@@ -1,0 +1,10 @@
+{
+  "name": "Luma Ambient",
+  "description": "A calm, decluttered Spotify theme that pairs with Luma Lyrics — softer surfaces, reduced chrome, and cleaner now-playing space.",
+  "preview": "preview.svg",
+  "readme": "README.md",
+  "usercss": "user.css",
+  "schemes": "color.ini",
+  "authors": [{ "name": "Sasha" }],
+  "tags": ["minimal", "dark", "ambient", "luma"]
+}
