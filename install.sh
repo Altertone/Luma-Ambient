@@ -56,7 +56,6 @@ spicetify config current_theme Luma-Ambient
 if [[ "$PREVIOUS_THEME" != "Luma-Ambient" ]]; then
   spicetify config color_scheme ambient
 fi
-spicetify config extensions luma-ambient-setup.js
 
 echo "Installed:"
 echo "  $THEMES_DIR/Luma-Ambient"

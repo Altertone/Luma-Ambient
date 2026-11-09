@@ -26,10 +26,16 @@
 - Added native Luma Lyrics styling scoped to its fullscreen overlay, settings, player controls, and artwork-derived accent.
 - Rewrote installation, compatibility, troubleshooting, and manual test documentation.
 - Corrected Marketplace metadata format and removed the unsupported MIT license claim.
+## 1.2.1 — 2026-11-09
+
+- Fixed a blank Now Playing panel: decluttering no longer hides structural containers via fragile `:has()` selectors (a Spotify markup change made them match the whole panel). Only stable concert/shop link targets are hidden now, so the panel can never go blank.
+- Moved the first-run setup prompt from a separate companion extension into `theme.js`, injected by Spicetify with `inject_theme_js 1` (same mechanism as the Comfy theme). No extra extension install step.
+- The setup script now hides the native lyrics button via Spotify's stable `.main-nowPlayingBar-lyricsButton` class in addition to testid/aria-label fallbacks.
+- Popup and toast radii follow the theme's rounded-rectangle tokens instead of pills.
+- The installer preserves the active color scheme on re-runs, enables JS injection automatically, and gained uninstallers.
+
 ## Unreleased
 
-- Added `luma-ambient-setup.js`, an optional first-run companion extension that asks whether Luma Lyrics is installed and adapts the UI to the answer, such as hiding Spotify's native lyrics button so the playbar keeps a single lyrics toggle.
-- Added `install.sh` and `install.ps1` one-step installers that copy the theme and the companion extension, enable both, and preserve an existing color scheme on re-runs.
-- The setup extension auto-detects Luma Lyrics and Luma Plus after the first run and keeps its saved state in step without re-prompting.
 - Used Spotify's accessible Home shelf labels to hide selected recommendation shelves independently while preserving shortcut playlists, followed shows, and Recents. Documented per-shelf CSS overrides.
+- Added text-based decluttering to `theme.js` for the Now Playing sections (Credits, On tour, Merch, Next in queue) and Home shelves (More like, Fans also like, Based on your recent listening), with `--luma-declutter-*` CSS opt-outs.
 - Refined Home spacing and rounded card surfaces for a calmer, more consistent layout.

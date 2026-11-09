@@ -87,6 +87,90 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   // saved flag are already wired; add rules here as they are needed.
   function applyPlus() {}
 
+  /* --------------------------------------------------------------------------
+     Decluttering (text-based, markup-tolerant)
+     CSS cannot match elements by their heading text, and Spotify's Now Playing
+     panel markup keeps shifting, so the theme script hides these sections by
+     reading their headings. Nothing structural is hidden — only the section
+     that owns the heading, and never the lyrics, player, or panel header.
+
+     Opt out per group by defining (e.g. in a local user.css override):
+       :root { --luma-declutter-npv: block; --luma-declutter-shelves: block; }
+     -------------------------------------------------------------------------- */
+  const NPV_LABELS = ["Credits", "On tour", "Merch", "Next in queue", "Next up"];
+  const SHELF_PREFIXES = [
+    "More like",
+    "Fans also like",
+    "Based on your recent listening",
+  ];
+
+  const declutteredOnce = new WeakSet();
+  function hideDecluttered(el, group) {
+    el.style.setProperty(
+      "display",
+      `var(--luma-declutter-${group}, none)`,
+      "important",
+    );
+    if (declutteredOnce.has(el)) return;
+    declutteredOnce.add(el);
+    console.info(`[Luma Ambient] decluttered: ${el.textContent.slice(0, 60).trim()}…`);
+  }
+
+  function declutterShelves() {
+    document
+      .querySelectorAll('section[data-testid="component-shelf"]')
+      .forEach((shelf) => {
+        const label = (shelf.getAttribute("aria-label") || "").trim();
+        const heading = shelf.querySelector("h1,h2,h3,h4,[role='heading']");
+        const text = heading ? heading.textContent.trim() : "";
+        const match = SHELF_PREFIXES.some(
+          (p) =>
+            label === p ||
+            label.startsWith(`${p} `) ||
+            text === p ||
+            text.startsWith(`${p} `),
+        );
+        if (match) hideDecluttered(shelf, "shelves");
+      });
+  }
+
+  function declutterNowPlaying() {
+    const scope =
+      document.querySelector(".Root__right-sidebar") ||
+      document.querySelector(".NowPlayingView") ||
+      document.querySelector("[data-npv-root]");
+    if (!scope) return;
+
+    scope.querySelectorAll("h1,h2,h3,h4,[role='heading']").forEach((heading) => {
+      const text = heading.textContent.trim();
+      if (!NPV_LABELS.includes(text)) return;
+
+      let el = heading;
+      for (let depth = 0; depth < 8 && el.parentElement; depth++) {
+        el = el.parentElement;
+        if (el === scope) break;
+        const cls = typeof el.className === "string" ? el.className : "";
+        const testid = el.getAttribute("data-testid") || "";
+        const isSection =
+          el.tagName === "SECTION" ||
+          el.tagName === "ARTICLE" ||
+          /nowPlayingView|npv/i.test(`${cls} ${testid}`);
+        if (!isSection) continue;
+
+        // Safety: never hide the lyrics preview, player controls, or header.
+        if (
+          el.querySelector(
+            ".main-nowPlayingView-lyricsContent, .main-nowPlayingView-playerControls, .main-nowPlayingView-header, [data-testid='NPV_Lyrics']",
+          )
+        )
+          continue;
+
+        hideDecluttered(el, "npv");
+        return;
+      }
+    });
+  }
+
   const UI_CSS = `
 #luma-ambient-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);opacity:0;z-index:1000002;pointer-events:none;padding:10px 14px;border-radius:var(--luma-radius-pill,999px);background:rgba(33,31,38,.92);color:#f3edf7;border:1px solid rgba(208,188,255,.25);font:600 13px/1.2 Inter,"Segoe UI",sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.35);backdrop-filter:blur(14px);transition:opacity .18s ease,transform .18s ease}
 #luma-ambient-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -225,6 +309,8 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     scanQueued = true;
     setTimeout(() => {
       scanQueued = false;
+      declutterShelves();
+      declutterNowPlaying();
       const lyrics = detectLyrics();
       if (lyrics && state.lyrics !== true) {
         state.lyrics = true;
@@ -260,6 +346,12 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     childList: true,
     subtree: true,
   });
+
+  // Catch the initial mount, then keep decluttering on DOM changes.
+  setTimeout(() => {
+    declutterShelves();
+    declutterNowPlaying();
+  }, 1200);
 
   globalThis.LumaAmbient = {
     version: "1.0.0",

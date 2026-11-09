@@ -9,7 +9,7 @@ Luma Ambient is a standalone Spicetify theme with built-in, automatically applie
 - Two coordinated fallback schemes: **Ambient** and **Ambient Soft**.
 - Artwork-reactive Material 3 colors from Luma Lyrics when its **Desktop colors** setting is enabled; both Ambient schemes remain the standalone fallback.
 - Material Symbols Rounded icons for labelled playback controls.
-- A minimal Now Playing sidebar that preserves the player and lyrics preview and hides supported Credits, On tour, Merch, and queue sections.
+- A minimal Now Playing sidebar that preserves the player and lyrics preview and hides concert and shop links (Credits, On tour, and Merch rows are link-based).
 - Home keeps your shortcut grid, followed shows, and Recents while hiding supported recommendation shelves by default; each shelf has an independent CSS visibility control.
 - Home shortcuts and content cards use a consistent rounded surface style with quiet spacing and hover feedback.
 - Consistent surface, text, border, spacing, and radius tokens.
@@ -48,7 +48,7 @@ This is an illustrative theme preview, not a screenshot of Spotify. Real Spotify
      .\install.ps1
      ```
 
-   The installer copies the theme and the first-run companion extension into your Spicetify directories, enables both, and applies. It is safe to re-run for updates, and it preserves your existing color scheme if the theme is already active.
+   The installer copies the theme (including its `theme.js` setup script) into your Spicetify Themes directory, enables JS injection, and applies. It is safe to re-run for updates, and it preserves your existing color scheme if the theme is already active.
 
 3. To switch schemes manually:
 
@@ -61,11 +61,11 @@ The scheme names correspond to the sections in `color.ini`.
 
 ### Manual install
 
-If you prefer not to run the installer, copy the theme folder to your Spicetify `Themes/` directory and `luma-ambient-setup.js` to `Extensions/`, then:
+If you prefer not to run the installer, copy the theme folder into your Spicetify `Themes/` directory, then:
 
 ```bash
 spicetify config current_theme Luma-Ambient color_scheme ambient
-spicetify config extensions luma-ambient-setup.js
+spicetify config inject_theme_js 1
 spicetify apply
 ```
 
@@ -81,13 +81,26 @@ If you prefer no prompt at all, delete `theme.js` from the installed theme folde
 
 ## Minimal Now Playing sidebar
 
-The theme preserves the current track/player area and Spotify's lyrics preview. It hides supported Credits, On tour, Merch, and queue sections in the current Now Playing panel markup. These sections do not all have stable semantic identifiers, so the CSS uses a mix of link destinations and panel structure; Spotify can change that structure. Verify the panel after client updates.
+The theme preserves the current track/player area and Spotify's lyrics preview. It hides concert and shop links in the Now Playing panel — the stable anchors behind the old Credits, On tour, and Merch rows. Only link targets are hidden (never structural containers), so a Spotify markup change cannot blank the panel; at worst a removed link leaves an empty gap. Verify the panel after client updates.
 
 The theme is CSS-only and has no settings interface. To show the sections again, add this rule to the end of `user.css` and run `spicetify apply`:
 
 ```css
 :root { --ambient-sidebar-hidden: block; }
 ```
+
+### Decluttering opt-outs
+
+The theme script hides the **Credits**, **On tour**, **Merch**, and **Next in queue** sections in the Now Playing view, and the **More like …**, **Fans also like**, and **Based on your recent listening** shelves on Home, by reading their headings (so it survives Spotify markup changes). Nothing structural is hidden and the lyrics preview, player, and panel header are never touched. Restore a group by adding this to the end of `user.css`:
+
+```css
+:root {
+  --luma-declutter-npv: block;
+  --luma-declutter-shelves: block;
+}
+```
+
+The console logs each hidden section as `[Luma Ambient] decluttered: …` so you can confirm what was removed.
 
 ## Home recommendation visibility
 
@@ -156,7 +169,7 @@ The following checks are required before calling a release fully verified. They 
 | Library | Check navigation, filters, saved items | Check sidebar and library interactions remain unaffected |
 | Playback | Check play/pause, seek, volume, queue, device controls | Check extension transport and Spotify player controls |
 | Lyrics | Not a built-in Luma feature | Check overlay, word/line/gentle/static modes, translation, romanization, artwork-reactive Material 3 desktop colors, and settings |
-| Now Playing sidebar | Check player and lyrics preview remain; Credits, On tour, Merch, and queue are hidden | Check the same minimal sidebar and confirm artwork palette updates |
+| Now Playing sidebar | Check player and lyrics preview remain; concert/shop links are hidden | Check the same minimal sidebar and confirm artwork palette updates |
 | Accessibility | Keyboard focus, contrast, reduced motion | Check overlay focus, contrast, reduced motion, and keyboard operation |
 
 Also verify Spotify's current client version and Spicetify version after every major Spotify UI update. Spotify's generated class names can change.
@@ -173,14 +186,14 @@ Also verify Spotify's current client version and Spicetify version after every m
 - `color.ini` — Spicetify color schemes.
 - `user.css` — standalone theme styling and design tokens.
 - `declutter.css` — optional compact-spacing add-on.
-- `luma-ambient-setup.js` — optional first-run companion extension (see "First-run setup").
-- `install.sh`, `install.ps1` — one-step installer for the theme and companion extension.
+- `theme.js` — first-run setup script, injected with `inject_theme_js 1` (see "First-run setup").
+- `install.sh`, `install.ps1` — one-step installer; `uninstall.sh`, `uninstall.ps1` remove the theme.
 - `manifest.json` — Spicetify Marketplace-style theme metadata.
 - `preview.svg` — illustrative preview.
 
 ## Version
 
-Current development version: **1.2.0**.
+Current development version: **1.2.1**.
 
 See [CHANGELOG.md](CHANGELOG.md) for changes.
 
