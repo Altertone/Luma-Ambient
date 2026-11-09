@@ -6,18 +6,19 @@ Luma Ambient is a standalone Spicetify theme with built-in, automatically applie
 
 ## Features
 
-- Two coordinated fallback schemes: **Ambient** and **Ambient Soft**.
-- Artwork-reactive Material 3 colors from Luma Lyrics when its **Desktop colors** setting is enabled; both Ambient schemes remain the standalone fallback.
+- Full Material You (Material 3) design system: tonal surface roles, state layers, shape scale, and elevation — flat surfaces, no gradients.
+- Two coordinated schemes: **Ambient** and **Ambient Soft**.
+- Artwork-reactive Material You colors from Luma Lyrics when its **Desktop colors** setting is enabled; both schemes remain the standalone fallback.
 - Material Symbols Rounded icons for labelled playback controls.
-- A minimal Now Playing sidebar that preserves the player and lyrics preview and hides concert and shop links (Credits, On tour, and Merch rows are link-based).
-- Home keeps your shortcut grid, followed shows, and Recents while hiding supported recommendation shelves by default; each shelf has an independent CSS visibility control.
+- A minimal Now Playing sidebar that preserves the player and lyrics preview; Credits, On tour, Merch, and Next in queue are removed entirely (including leftover wrappers).
+- Home keeps your shortcut grid, followed shows, and Recents while removing the recommendation shelves; each shelf has an independent visibility control.
 - Home shortcuts and content cards use a consistent rounded surface style with quiet spacing and hover feedback.
 - Consistent surface, text, border, spacing, and radius tokens.
 - Calmer navigation, cards, track rows, search, and now-playing bar.
 - Essential navigation, search, playback, focus indicators, and selected states remain visible.
 - Reduced-motion support and no unnecessary animated effects.
 - Optional compact-spacing rules in `declutter.css`.
-- Native Luma Lyrics styling scoped to its fullscreen overlay, player controls, settings, and artwork-derived Material 3 palette.
+- Native Luma Lyrics styling scoped to its fullscreen overlay, player controls, settings, and artwork-derived Material You palette.
 
 ## Preview
 
@@ -79,19 +80,25 @@ To change your answer later, open Spotify's console and run `LumaAmbient.ask()`,
 
 If you prefer no prompt at all, delete `theme.js` from the installed theme folder and run `spicetify config inject_theme_js 0 && spicetify apply`; the theme then behaves as pure CSS.
 
+## Material You tokens
+
+`color.ini` defines a full Material 3 role set per scheme (`surface`, `surface-container-*`, `on-surface*`, `primary`, `primary-container`, `secondary`, `tertiary`, `error`, `outline*`, `inverse-*`, `scrim`, …). `user.css` maps them onto `--md-*` tokens used by every surface, and also keeps the legacy Spicetify aliases (`--spice-main`, `--spice-sidebar`, `--spice-player`, `--spice-card`, `--spice-button`, `--spice-text`, `--spice-subtext`, …) so existing customizations and Luma Lyrics' **Desktop colors** mapping keep working — the artwork palette drives the main surfaces automatically.
+
+State layers (hover/pressed/selected), the shape scale (`--md-shape-xs/sm/md/lg/xl`), spacing, elevation, and the font stack are all tokens, so a scheme can be re-skinned by editing `color.ini` alone.
+
 ## Minimal Now Playing sidebar
 
-The theme preserves the current track/player area and Spotify's lyrics preview. It hides concert and shop links in the Now Playing panel — the stable anchors behind the old Credits, On tour, and Merch rows. Only link targets are hidden (never structural containers), so a Spotify markup change cannot blank the panel; at worst a removed link leaves an empty gap. Verify the panel after client updates.
+The theme preserves the current track/player area and Spotify's lyrics preview. The theme script removes the **Credits**, **On tour**, **Merch**, and **Next in queue** sections entirely — including the wrappers they leave behind — by matching their headings, so a Spotify markup change cannot blank the panel. The lyrics preview, player, and panel header are never touched. Concert and shop links are hidden in CSS as a fallback.
 
-The theme is CSS-only and has no settings interface. To show the sections again, add this rule to the end of `user.css` and run `spicetify apply`:
+To show the sections again, add this to the end of `user.css` and run `spicetify apply`:
 
 ```css
-:root { --ambient-sidebar-hidden: block; }
+:root { --luma-declutter-npv: block; }
 ```
 
 ### Decluttering opt-outs
 
-The theme script hides the **Credits**, **On tour**, **Merch**, and **Next in queue** sections in the Now Playing view, and the **More like …**, **Fans also like**, and **Based on your recent listening** shelves on Home, by reading their headings (so it survives Spotify markup changes). Nothing structural is hidden and the lyrics preview, player, and panel header are never touched. Restore a group by adding this to the end of `user.css`:
+The theme script also removes the **More like …**, **Fans also like**, and **Based on your recent listening** shelves on Home. Restore a group with:
 
 ```css
 :root {
@@ -193,7 +200,7 @@ Also verify Spotify's current client version and Spicetify version after every m
 
 ## Version
 
-Current development version: **1.2.1**.
+Current development version: **1.3.0**.
 
 See [CHANGELOG.md](CHANGELOG.md) for changes.
 

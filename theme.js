@@ -111,9 +111,35 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       `var(--luma-declutter-${group}, none)`,
       "important",
     );
+    collapseEmptyParents(el);
     if (declutteredOnce.has(el)) return;
     declutteredOnce.add(el);
     console.info(`[Luma Ambient] decluttered: ${el.textContent.slice(0, 60).trim()}…`);
+  }
+
+  // After a section is hidden, remove the wrappers it left behind so the
+  // block disappears entirely instead of leaving an empty gap. Never climbs
+  // into layout roots, and stops as soon as a parent still has content.
+  const LAYOUT_ROOTS =
+    ".Root__right-sidebar, .Root__main-view, .Root__nav-bar, .main-nowPlayingBar-nowPlayingBar, .main-home-content, .Root__top-container, body, html";
+
+  function collapseEmptyParents(el) {
+    let hiddenEl = el;
+    let parent = el.parentElement;
+    for (let depth = 0; depth < 3 && parent; depth++) {
+      if (parent.matches(LAYOUT_ROOTS)) break;
+      const hasVisibleContent = Array.from(parent.childNodes).some((node) => {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent.trim().length > 0;
+        if (node.nodeType !== Node.ELEMENT_NODE || node === hiddenEl) return false;
+        if (getComputedStyle(node).display === "none") return false;
+        if (node.querySelector("img, canvas, svg, video, input, button, a")) return true;
+        return node.textContent.trim().length > 0;
+      });
+      if (hasVisibleContent) break;
+      parent.style.setProperty("display", "var(--luma-declutter-npv, none)", "important");
+      hiddenEl = parent;
+      parent = parent.parentElement;
+    }
   }
 
   function declutterShelves() {
@@ -172,23 +198,23 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   }
 
   const UI_CSS = `
-#luma-ambient-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);opacity:0;z-index:1000002;pointer-events:none;padding:10px 14px;border-radius:var(--luma-radius-pill,999px);background:rgba(33,31,38,.92);color:#f3edf7;border:1px solid rgba(208,188,255,.25);font:600 13px/1.2 Inter,"Segoe UI",sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.35);backdrop-filter:blur(14px);transition:opacity .18s ease,transform .18s ease}
+#luma-ambient-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);opacity:0;z-index:1000002;pointer-events:none;padding:10px 14px;border-radius:var(--md-shape-full,999px);background:color-mix(in srgb,var(--md-surface-container-high,#211f26) 92%,transparent);color:var(--md-on-surface,#f3edf7);border:1px solid color-mix(in srgb,var(--md-primary,#d0bcff) 25%,transparent);font:600 13px/1.2 var(--md-font,Inter);box-shadow:var(--md-elevation-2,0 2px 6px rgb(0 0 0 / 15%));backdrop-filter:blur(14px);transition:opacity .18s ease,transform .18s ease}
 #luma-ambient-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-#luma-ambient-scrim{position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;background:rgba(0,0,0,.5);opacity:0;transition:opacity .18s ease}
+#luma-ambient-scrim{position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;background:var(--md-scrim,rgb(0 0 0 / 60%));opacity:0;transition:opacity .18s ease}
 #luma-ambient-scrim.show{opacity:1}
-#luma-ambient-scrim .luma-setup{width:min(380px,calc(100vw - 48px));padding:24px 24px 20px;border-radius:var(--luma-radius-lg,16px);background:var(--spice-player,#1d1b20);border:1px solid color-mix(in srgb,var(--spice-text,#f3edf7) 12%,transparent);box-shadow:0 24px 72px rgba(0,0,0,.45);color:var(--spice-text,#f3edf7);font-family:Inter,"Segoe UI",system-ui,sans-serif;transform:translateY(8px) scale(.98);transition:transform .18s ease}
+#luma-ambient-scrim .luma-setup{width:min(380px,calc(100vw - 48px));padding:24px 24px 20px;border-radius:var(--md-shape-lg,16px);background:var(--md-surface-container,#1d1b20);border:1px solid var(--md-outline-variant,color-mix(in srgb,var(--md-on-surface,#f3edf7) 14%,transparent));box-shadow:var(--md-elevation-3,0 4px 8px rgb(0 0 0 / 15%));color:var(--md-on-surface,#f3edf7);font-family:var(--md-font,Inter);transform:translateY(8px) scale(.98);transition:transform .18s ease}
 #luma-ambient-scrim.show .luma-setup{transform:none}
 #luma-ambient-scrim h2{margin:0 0 8px;font-size:15px;font-weight:650;letter-spacing:-.02em}
-#luma-ambient-scrim p{margin:0 0 18px;font-size:13px;line-height:1.55;color:var(--spice-subtext,#cac4d0)}
-#luma-ambient-scrim .luma-setup-hint{display:none;margin:-10px 0 14px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--spice-button,#d0bcff)}
+#luma-ambient-scrim p{margin:0 0 18px;font-size:13px;line-height:1.55;color:var(--md-on-surface-variant,#cac4d0)}
+#luma-ambient-scrim .luma-setup-hint{display:none;margin:-10px 0 14px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--md-primary,#d0bcff)}
 #luma-ambient-scrim .luma-setup-hint.visible{display:block}
 #luma-ambient-scrim .luma-setup-actions{display:flex;gap:8px}
-#luma-ambient-scrim .luma-setup-actions button{flex:1;padding:9px 14px;border-radius:var(--luma-radius-sm,8px);font:600 13px/1 Inter,"Segoe UI",sans-serif;cursor:pointer;transition:filter .15s ease,background-color .15s ease,border-color .15s ease}
-#luma-ambient-scrim .luma-setup-yes{border:1px solid transparent;background:var(--spice-button,#d0bcff);color:var(--luma-on-primary,#241a30)}
+#luma-ambient-scrim .luma-setup-actions button{flex:1;padding:9px 14px;border-radius:var(--md-shape-sm,8px);font:600 13px/1 var(--md-font,Inter);cursor:pointer;transition:filter .15s ease,background-color .15s ease,border-color .15s ease}
+#luma-ambient-scrim .luma-setup-yes{border:1px solid transparent;background:var(--md-primary,#d0bcff);color:var(--md-on-primary,#241a30)}
 #luma-ambient-scrim .luma-setup-yes:hover{filter:brightness(1.08)}
-#luma-ambient-scrim .luma-setup-no{border:1px solid color-mix(in srgb,var(--spice-text,#f3edf7) 22%,transparent);background:transparent;color:var(--spice-text,#f3edf7);font-weight:500}
-#luma-ambient-scrim .luma-setup-no:hover{background:color-mix(in srgb,var(--spice-text,#f3edf7) 8%,transparent)}
-#luma-ambient-scrim :where(button):focus-visible{outline:2px solid var(--spice-button,#d0bcff);outline-offset:2px}
+#luma-ambient-scrim .luma-setup-no{border:1px solid color-mix(in srgb,var(--md-on-surface,#f3edf7) 22%,transparent);background:transparent;color:var(--md-on-surface,#f3edf7);font-weight:500}
+#luma-ambient-scrim .luma-setup-no:hover{background:var(--md-state-hover,color-mix(in srgb,var(--md-primary,#d0bcff) 8%,transparent))}
+#luma-ambient-scrim :where(button):focus-visible{outline:2px solid var(--md-primary,#d0bcff);outline-offset:2px}
 @media (prefers-reduced-motion: reduce) {
   #luma-ambient-scrim,#luma-ambient-scrim .luma-setup,#luma-ambient-toast{transition:none}
 }

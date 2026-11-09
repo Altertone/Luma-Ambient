@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3.0 — 2026-11-10
+
+- Rebuilt the theme as a full Material You (Material 3) design system: `color.ini` now defines the complete role set (surface-container levels, primary/secondary/tertiary containers, outlines, inverse roles, scrim) per scheme, mapped onto `--md-*` tokens.
+- Reworked every surface with Material You principles: flat tonal elevation instead of gradients, M3 state layers for hover/pressed/selected, the M3 shape scale (4/8/12/16/28), tonal scrollbars, and M3-styled menus, dialogs, toggles, inputs, and navigation.
+- The legacy `--spice-*` aliases are preserved and read first, so Luma Lyrics' Desktop colors artwork palette still drives the main surfaces.
+- Removed the Now Playing sections entirely (Credits, On tour, Merch, Next in queue): the theme script now also collapses the empty wrappers they leave behind, so no gaps remain.
+- Removed the Home recommendation shelves (More like, Fans also like, Based on your recent listening) entirely.
+- First-run setup prompt and toasts retokened to the Material You palette.
+
+## 1.2.1 — 2026-11-09
+
+- Fixed a blank Now Playing panel: decluttering no longer hides structural containers via fragile `:has()` selectors (a Spotify markup change made them match the whole panel). Only stable concert/shop link targets are hidden now, so the panel can never go blank.
+- Moved the first-run setup prompt from a separate companion extension into `theme.js`, injected by Spicetify with `inject_theme_js 1` (same mechanism as the Comfy theme). No extra extension install step.
+- The setup script now hides the native lyrics button via Spotify's stable `.main-nowPlayingBar-lyricsButton` class in addition to testid/aria-label fallbacks.
+- Popup and toast radii follow the theme's rounded-rectangle tokens instead of pills.
+- The installer preserves the active color scheme on re-runs, enables JS injection automatically, and gained uninstallers.
+
 ## 1.2.0 — 2026-11-09
 
 - Fixed the artwork palette integration to follow Luma Lyrics' **Desktop colors** toggle through Spotify's `--spice-*` variables, avoiding collisions with the extension's private `--luma-*` tokens.
@@ -7,6 +24,7 @@
 - Kept native Spotify button labels, SVG accessibility semantics, hover behavior, and click targets while adding Material Symbols glyphs.
 - Narrowed sidebar rules to Now Playing panel content and added a documented CSS visibility override.
 - Added reduced-motion handling for the expanded surface transitions.
+- Used Spotify's accessible Home shelf labels to hide selected recommendation shelves independently while preserving shortcut playlists, followed shows, and Recents.
 
 ## 1.1.0 — 2026-11-09
 
@@ -14,7 +32,6 @@
 - Added Material Symbols Rounded replacements for labelled playback controls.
 - Simplified Spotify's Now Playing sidebar by hiding Credits, On tour, Merch, and Next in queue while retaining the player and lyrics preview.
 - Expanded compatibility and manual-test documentation for the new integration.
-
 
 ## 1.0.0 — 2026-11-09
 
@@ -26,16 +43,3 @@
 - Added native Luma Lyrics styling scoped to its fullscreen overlay, settings, player controls, and artwork-derived accent.
 - Rewrote installation, compatibility, troubleshooting, and manual test documentation.
 - Corrected Marketplace metadata format and removed the unsupported MIT license claim.
-## 1.2.1 — 2026-11-09
-
-- Fixed a blank Now Playing panel: decluttering no longer hides structural containers via fragile `:has()` selectors (a Spotify markup change made them match the whole panel). Only stable concert/shop link targets are hidden now, so the panel can never go blank.
-- Moved the first-run setup prompt from a separate companion extension into `theme.js`, injected by Spicetify with `inject_theme_js 1` (same mechanism as the Comfy theme). No extra extension install step.
-- The setup script now hides the native lyrics button via Spotify's stable `.main-nowPlayingBar-lyricsButton` class in addition to testid/aria-label fallbacks.
-- Popup and toast radii follow the theme's rounded-rectangle tokens instead of pills.
-- The installer preserves the active color scheme on re-runs, enables JS injection automatically, and gained uninstallers.
-
-## Unreleased
-
-- Used Spotify's accessible Home shelf labels to hide selected recommendation shelves independently while preserving shortcut playlists, followed shows, and Recents. Documented per-shelf CSS overrides.
-- Added text-based decluttering to `theme.js` for the Now Playing sections (Credits, On tour, Merch, Next in queue) and Home shelves (More like, Fans also like, Based on your recent listening), with `--luma-declutter-*` CSS opt-outs.
-- Refined Home spacing and rounded card surfaces for a calmer, more consistent layout.

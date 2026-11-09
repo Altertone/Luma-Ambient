@@ -1,384 +1,529 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,500,0,0");
-/* Luma Ambient 1.2.1
- * Standalone Spicetify theme. Keep selectors narrow and lyric-neutral.
+/* Luma Ambient 1.3.0 — Material You theme for Spicetify.
+ * Tonal surfaces, state layers, and shape tokens only. Selectors stay narrow
+ * so extension UIs (Luma Lyrics, Luma Plus, marketplace) are untouched.
  */
 
-/* Design tokens: color.ini supplies the active scheme through --spice-* vars. */
+/* --------------------------------------------------------------------------
+   Material 3 tokens
+   color.ini supplies per-scheme roles through --spice-*. Luma Lyrics writes
+   the legacy aliases (--spice-main/-sidebar/-player/-card/-button) with
+   artwork colors when Desktop colors is enabled, so those are read first and
+   the theme follows the extension automatically.
+   -------------------------------------------------------------------------- */
 :root {
   color-scheme: dark;
-  --ambient-bg: var(--spice-main, #141218);
-  --ambient-sidebar: var(--spice-sidebar, #17141c);
-  --ambient-player: var(--spice-player, #1d1b20);
-  --ambient-surface: var(--spice-card, #211f26);
-  --ambient-surface-raised: var(--spice-main-elevated, #1d1b20);
-  --ambient-surface-hover: var(--spice-highlight, #2b2930);
-  --ambient-surface-selected: var(--spice-highlight-elevated, #36343b);
-  --ambient-text: var(--spice-text, #f3edf7);
-  --ambient-muted: var(--spice-subtext, #cac4d0);
-  --ambient-accent: var(--spice-button, #d0bcff);
-  --ambient-on-accent: var(--luma-on-primary, #241a30);
-  --ambient-border: color-mix(in srgb, var(--ambient-text) 12%, transparent);
-  --ambient-border-strong: color-mix(in srgb, var(--ambient-text) 22%, transparent);
-  --luma-space-1: 4px;
-  --luma-space-2: 8px;
-  --luma-space-3: 12px;
-  --luma-space-4: 16px;
-  --luma-space-5: 20px;
-  --luma-radius-sm: 8px;
-  --luma-radius-md: 12px;
-  --luma-radius-lg: 16px;
-  --luma-radius-pill: 999px;
+
+  /* Color roles */
+  --md-primary: var(--spice-button, var(--spice-primary, #d0bcff));
+  --md-on-primary: var(--spice-on-primary, #241a30);
+  --md-primary-container: var(--spice-selected-row, var(--spice-primary-container, #453d53));
+  --md-on-primary-container: var(--spice-on-primary-container, #e3d6ff);
+  --md-secondary: var(--spice-subtext, var(--spice-secondary, #cac4d0));
+  --md-on-secondary: var(--spice-on-secondary, #2a2730);
+  --md-secondary-container: var(--spice-tab-active, var(--spice-secondary-container, #2b2930));
+  --md-on-secondary-container: var(--spice-on-secondary-container, #e6e1e5);
+  --md-tertiary: var(--spice-notification, var(--spice-tertiary, #d0bcff));
+  --md-on-tertiary: var(--spice-on-tertiary, #241a30);
+  --md-tertiary-container: var(--spice-tertiary-container, #453d53);
+  --md-on-tertiary-container: var(--spice-on-tertiary-container, #e3d6ff);
+  --md-error: var(--spice-notification-error, var(--spice-error, #f2b8b5));
+  --md-on-error: var(--spice-on-error, #49000a);
+  --md-error-container: var(--spice-error-container, #5c1f1c);
+  --md-on-error-container: var(--spice-on-error-container, #f2b8b5);
+  --md-surface: var(--spice-main, var(--spice-surface, #141218));
+  --md-on-surface: var(--spice-text, var(--spice-on-surface, #f3edf7));
+  --md-surface-variant: var(--spice-highlight, var(--spice-surface-variant, #2b2930));
+  --md-on-surface-variant: var(--spice-subtext, var(--spice-on-surface-variant, #cac4d0));
+  --md-surface-container-lowest: var(--spice-surface-container-lowest, #0d0b10);
+  --md-surface-container-low: var(--spice-sidebar, var(--spice-surface-container-low, #17141c));
+  --md-surface-container: var(--spice-player, var(--spice-surface-container, #1d1b20));
+  --md-surface-container-high: var(--spice-card, var(--spice-surface-container-high, #211f26));
+  --md-surface-container-highest: var(--spice-highlight-elevated, var(--spice-surface-container-highest, #36343b));
+  --md-outline: var(--spice-outline, color-mix(in srgb, var(--md-on-surface) 38%, transparent));
+  --md-outline-variant: var(--spice-outline-variant, color-mix(in srgb, var(--md-on-surface) 14%, transparent));
+  --md-inverse-surface: var(--spice-inverse-surface, var(--md-on-surface));
+  --md-inverse-on-surface: var(--spice-inverse-on-surface, var(--md-surface));
+  --md-inverse-primary: var(--spice-inverse-primary, var(--md-primary));
+  --md-scrim: rgb(0 0 0 / 60%);
+
+  /* State layers (Material 3 opacities) */
+  --md-state-hover: color-mix(in srgb, var(--md-primary) 8%, transparent);
+  --md-state-pressed: color-mix(in srgb, var(--md-primary) 12%, transparent);
+  --md-state-focus: color-mix(in srgb, var(--md-primary) 16%, transparent);
+  --md-state-selected: color-mix(in srgb, var(--md-primary) 14%, var(--md-surface-container));
+
+  /* Shape scale (Material 3) */
+  --md-shape-xs: 4px;
+  --md-shape-sm: 8px;
+  --md-shape-md: 12px;
+  --md-shape-lg: 16px;
+  --md-shape-xl: 28px;
+  --md-shape-full: 999px;
+
+  /* Spacing scale */
+  --md-space-1: 4px;
+  --md-space-2: 8px;
+  --md-space-3: 12px;
+  --md-space-4: 16px;
+  --md-space-5: 20px;
+  --md-space-6: 24px;
+  --md-space-8: 32px;
+
+  /* Type */
+  --md-font: Inter, "Segoe UI", system-ui, sans-serif;
+
+  /* Elevation (tonal shadow, no gradients) */
+  --md-elevation-1: 0 1px 2px rgb(0 0 0 / 30%), 0 1px 3px 1px rgb(0 0 0 / 15%);
+  --md-elevation-2: 0 1px 2px rgb(0 0 0 / 30%), 0 2px 6px 2px rgb(0 0 0 / 15%);
+  --md-elevation-3: 0 4px 8px 3px rgb(0 0 0 / 15%), 0 1px 3px rgb(0 0 0 / 30%);
+
+  /* Visibility hooks (kept for existing user customizations) */
+  --ambient-sidebar-hidden: none;
+  --ambient-home-top-mixes: none;
+  --ambient-home-made-for-you: none;
+  --ambient-home-more-like: none;
+  --ambient-home-recent-recommendations: none;
 }
 
-/* Main app regions */
+/* --------------------------------------------------------------------------
+   Global
+   -------------------------------------------------------------------------- */
+body,
+.main-view-container,
+.main-view-container__host {
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  font-family: var(--md-font);
+}
+
+::selection {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+/* Thin tonal scrollbars */
+.os-theme-spotify.os-scrollbar {
+  --os-size: 8px;
+  --os-handle-min-size: 30px;
+  --os-handle-bg: var(--md-outline-variant);
+  --os-handle-bg-hover: var(--md-outline);
+  --os-handle-bg-active: var(--md-primary);
+  -webkit-app-region: no-drag;
+}
+.os-scrollbar-handle {
+  border-radius: var(--md-shape-xs);
+}
+
+/* Visible keyboard focus; the outline is not color-only state communication. */
+:where(button, a, input, select, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Layout surfaces — flat tonal layers, no gradients
+   -------------------------------------------------------------------------- */
 .Root__nav-bar {
-  background: var(--ambient-sidebar);
-  border-inline-end: 1px solid var(--ambient-border);
+  background: var(--md-surface-container-low);
+  border-inline-end: 1px solid var(--md-outline-variant);
 }
 
 .Root__main-view {
-  background: var(--ambient-bg);
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+}
+
+.Root__right-sidebar {
+  background: var(--md-surface-container-low);
+  color: var(--md-on-surface);
 }
 
 .main-nowPlayingBar-nowPlayingBar {
-  background: var(--ambient-player);
-  border-top: 1px solid var(--ambient-border);
+  background: var(--md-surface-container);
+  border-top: 1px solid var(--md-outline-variant);
   box-shadow: 0 -8px 28px rgb(0 0 0 / 10%);
 }
 
-.main-globalNav-searchInputContainer .main-topBar-searchBar {
-  background: var(--ambient-surface-raised);
-  border: 1px solid var(--ambient-border);
-  border-radius: var(--luma-radius-pill);
+.main-topBar-background,
+.main-topBar-background .main-topBar-overlay {
+  background-color: color-mix(in srgb, var(--md-surface) 84%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.main-yourLibraryX-libraryContainer {
+  background: var(--md-surface-container-low);
+}
+
+/* Kill gradients: Material You uses tonal elevation, never image gradients. */
+.main-home-homeHeader,
+.search-searchCategory-contentArea::before,
+.search-searchCategory-contentArea::after,
+.main-actionBarBackground-background,
+.main-entityHeader-backgroundColor,
+.playlist-playlist-actionBarBackground-background {
+  background-image: none;
+  display: none;
+}
+
+.main-entityHeader-shadow {
   box-shadow: none;
 }
 
-.main-globalNav-searchInputContainer .main-topBar-searchBar:focus-within {
-  border-color: var(--ambient-accent);
-}
-
-/* Content surfaces: avoid wildcard card selectors so extension UIs are untouched. */
+/* --------------------------------------------------------------------------
+   Cards and grids
+   -------------------------------------------------------------------------- */
 .main-card-card,
 .main-heroCard-card {
-  border: 1px solid transparent;
-  border-radius: var(--luma-radius-lg);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-lg);
   box-shadow: none;
+  color: var(--md-on-surface);
   transition: background-color 160ms ease, border-color 160ms ease;
 }
 
 .main-card-card:hover,
 .main-heroCard-card:hover {
-  background: var(--ambient-surface-hover);
-  border-color: var(--ambient-border);
+  background: var(--md-surface-container-highest);
+  border-color: var(--md-outline);
 }
 
-.main-trackList-trackListRow {
-  border-radius: var(--luma-radius-sm);
-  transition: background-color 120ms ease;
+.main-card-imageContainer,
+.main-card-image {
+  border-radius: var(--md-shape-md);
+  background: var(--md-surface-container-highest);
 }
 
-.main-trackList-trackListRow:hover {
-  background: var(--ambient-surface-hover);
-}
-
-.main-trackList-trackListRow[aria-selected="true"] {
-  background: var(--ambient-surface-selected);
-}
-
-/* Home uses the same quiet spacing and rounded surface language as the rest
-   of the theme. Keep Spotify's own card content and personal shortcuts intact. */
+/* Home uses the same quiet spacing and rounded surface language. */
 .main-home-content > section {
-  margin-block-end: var(--luma-space-4);
+  margin-block-end: var(--md-space-4);
 }
 
 .main-home-content .view-homeShortcutsGrid-shortcut {
+  background: var(--md-surface-container);
   overflow: hidden;
-  border-radius: var(--luma-radius-md);
+  border-radius: var(--md-shape-md);
   transition: background-color 180ms ease, border-radius 180ms ease;
 }
 
 .main-home-content .view-homeShortcutsGrid-shortcut:hover {
-  background: color-mix(in srgb, var(--ambient-primary) 8%, var(--ambient-card));
+  background: var(--md-surface-container-high);
 }
 
 .main-home-content section[data-testid="component-shelf"] .main-card-card {
-  border-radius: var(--luma-radius-lg);
+  border-radius: var(--md-shape-lg);
 }
 
-/* Playback layout: preserve the transport, seek bar, device and volume controls. */
+.main-home-content h2,
+.main-home-content h3 {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+/* --------------------------------------------------------------------------
+   Track rows and lists
+   -------------------------------------------------------------------------- */
+.main-trackList-trackListHeader {
+  background: transparent;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.main-trackList-trackListHeaderRow {
+  border-bottom: transparent;
+}
+
+.main-trackList-trackListRow {
+  border-radius: var(--md-shape-sm);
+  color: var(--md-on-surface);
+  transition: background-color 120ms ease;
+}
+
+.main-trackList-trackListRow:hover {
+  background: var(--md-state-hover);
+}
+
+.main-trackList-trackListRow[aria-selected="true"] {
+  background: var(--md-state-selected);
+  color: var(--md-on-surface);
+}
+
+/* Now-playing row uses the primary container tone. */
+.main-trackList-trackListRow:has(.main-trackList-rowMarker > img[src*="equaliser-animated-green.gif"]) {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.main-trackList-trackListRow:has(.main-trackList-rowMarker > img[src*="equaliser-animated-green.gif"]) *,
+.main-trackList-trackListRow:focus-within:has(.main-trackList-rowMarker > img[src*="equaliser-animated-green.gif"]) {
+  color: var(--md-on-primary-container) !important;
+}
+
+.main-trackList-rowMainContentSubTitle {
+  opacity: 0.72;
+}
+
+.main-rootlist-rootlistItem {
+  border-radius: var(--md-shape-sm);
+}
+
+/* --------------------------------------------------------------------------
+   Search
+   -------------------------------------------------------------------------- */
+.main-globalNav-searchInputContainer .main-topBar-searchBar {
+  background: var(--md-surface-container-highest);
+  border: 1px solid transparent;
+  border-radius: var(--md-shape-full);
+  box-shadow: none;
+  color: var(--md-on-surface);
+}
+
+.main-globalNav-searchInputContainer .main-topBar-searchBar:focus-within {
+  background: var(--md-surface-container-highest);
+  border-color: var(--md-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Buttons — filled, tonal, icon, and text styles
+   -------------------------------------------------------------------------- */
+.main-genericButton-button {
+  background: transparent;
+  border-radius: var(--md-shape-full);
+  color: var(--md-on-surface-variant);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.main-genericButton-button:hover {
+  background: var(--md-state-hover);
+  color: var(--md-on-surface);
+}
+
+.main-genericButton-button[aria-checked="true"],
+.main-genericButton-buttonActive {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+/* Filled primary action (play) */
+button[data-testid="play-button"],
+.main-playPauseButton-button {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border-radius: var(--md-shape-full);
+  box-shadow: var(--md-elevation-1);
+  transition: transform 150ms ease, filter 150ms ease;
+}
+
+button[data-testid="play-button"]:hover,
+.main-playPauseButton-button:hover {
+  filter: brightness(1.08);
+  transform: scale(1.04);
+}
+
+/* Now playing bar icon buttons */
+.main-nowPlayingBar-nowPlayingBar button {
+  border-radius: var(--md-shape-full);
+  color: var(--md-on-surface-variant);
+}
+
+.main-nowPlayingBar-nowPlayingBar button:hover {
+  background: var(--md-state-hover);
+  color: var(--md-on-surface);
+}
+
+.main-nowPlayingBar-nowPlayingBar button[aria-pressed="true"],
+.main-nowPlayingBar-nowPlayingBar button.main-genericButton-buttonActive {
+  color: var(--md-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Playback
+   -------------------------------------------------------------------------- */
 .main-nowPlayingBar-center .playback-bar {
   max-width: 720px;
+}
+
+.playback-progressbar [data-testid*="progress-bar"] {
+  --bg-color: var(--md-surface-container-highest);
+  --fg-color: var(--md-on-surface-variant);
+  --is-active-fg-color: var(--md-primary);
+}
+
+.playback-progressbar [data-testid*="progress-label"] {
+  background: var(--md-surface-container-highest);
+  color: var(--md-on-surface);
+  border-radius: var(--md-shape-xs);
 }
 
 .main-nowPlayingWidget-trackInfo {
   min-width: 0;
 }
 
-.main-nowPlayingBar-nowPlayingBar button {
-  border-radius: var(--luma-radius-sm);
+.main-nowPlayingWidget-trackInfo .main-trackInfo-name {
+  color: var(--md-on-surface);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
-/* Library spacing stays compact without removing navigation or library actions. */
-.main-yourLibraryX-libraryContainer {
-  padding-top: var(--luma-space-2);
+.main-nowPlayingWidget-trackInfo .main-trackInfo-artists,
+.main-nowPlayingWidget-trackInfo a {
+  color: var(--md-on-surface-variant);
 }
-
-/* Visible keyboard focus; the outline is not color-only state communication. */
-:where(button, a, input, [role="button"], [tabindex]):focus-visible {
-  outline: 2px solid var(--ambient-accent);
-  outline-offset: 2px;
-}
-
-/* Keep Spotify's own lyric views and extension surfaces outside this theme's rules. */
-@media (prefers-reduced-motion: reduce) {
-  .main-card-card,
-  .main-heroCard-card,
-  .main-trackList-trackListRow {
-    transition: none;
-  }
-}
-
 
 /* --------------------------------------------------------------------------
-   Luma Lyrics integration
-   Luma Lyrics creates its own #luma-root overlay and injects its own styles.
-   These rules are intentionally scoped to that overlay only. They use the
-   extension's artwork-derived --accent / --accent-rgb when available, while
-   leaving lyric timing, word highlighting, scrolling and player behavior alone.
-   This block is active automatically when Luma Ambient is the selected theme.
+   Menus, dialogs, tooltips
    -------------------------------------------------------------------------- */
-
-#luma-root {
-  color: var(--spice-text, #f3edf7) !important;
-  font-family: Inter, "Segoe UI", system-ui, sans-serif !important;
+.main-contextMenu-tippy {
+  --generic-tooltip-background-color: var(--md-surface-container-highest);
 }
 
-#luma-root .shade {
-  background: rgba(9, 8, 13, var(--dim, 0.25)) !important;
+.main-contextMenu-menu,
+.main-contextMenu-tippy > div {
+  background: var(--md-surface-container-highest);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-md);
+  box-shadow: var(--md-elevation-3);
 }
 
-#luma-root .bar .tool {
-  width: 42px !important;
-  height: 42px !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-radius: 12px !important;
-  background: rgba(24, 21, 30, 0.72) !important;
-  color: var(--spice-text, #f3edf7) !important;
-  box-shadow: none !important;
-  backdrop-filter: blur(18px) !important;
-  -webkit-backdrop-filter: blur(18px) !important;
-  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease !important;
+.main-contextMenu-menuItemButton {
+  border-radius: var(--md-shape-sm);
+  color: var(--md-on-surface);
+  transition: background-color 120ms ease;
 }
 
-#luma-root .bar .tool:hover {
-  background: rgba(54, 48, 66, 0.88) !important;
-  border-color: rgba(var(--accent-rgb, 208, 188, 255), 0.55) !important;
-  transform: translateY(-1px) !important;
+.main-contextMenu-menuItemButton:hover,
+.main-contextMenu-menuItemButton[role="link"]:hover {
+  background: var(--md-state-hover);
 }
 
-#luma-root .bar .status {
-  color: rgba(243, 237, 247, 0.72) !important;
-  font-size: 11px !important;
-  letter-spacing: 0.035em !important;
+.main-contextMenu-menuItemButton[role="menuitemradio"][aria-checked="true"] {
+  color: var(--md-primary);
 }
 
-#luma-root .player .title {
-  color: var(--spice-text, #f3edf7) !important;
-  font-weight: 680 !important;
-  letter-spacing: -0.035em !important;
+.GenericModal__overlay {
+  background: var(--md-scrim);
 }
 
-#luma-root .player .artist,
-#luma-root .times,
-#luma-root .volume {
-  color: var(--spice-subtext, #cac4d0) !important;
+[role="dialog"],
+.main-trackCreditsModal-container,
+.main-trackCreditsModal-mainSection {
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-lg);
+  color: var(--md-on-surface);
 }
 
-#luma-root .controls button {
-  border-radius: 12px !important;
-  transition: background-color 150ms ease, transform 150ms ease !important;
+div[role="alert"] {
+  background: var(--md-surface-container-highest) !important;
+  color: var(--md-on-surface) !important;
+  border-radius: var(--md-shape-md);
 }
-
-#luma-root .controls button:hover {
-  background: rgba(255, 255, 255, 0.09) !important;
-  transform: translateY(-1px) !important;
-}
-
-#luma-root .controls .play {
-  color: var(--spice-main, #141218) !important;
-  background: var(--accent, var(--spice-button, #d0bcff)) !important;
-  border-radius: 50% !important;
-  box-shadow: 0 5px 22px rgba(var(--accent-rgb, 208, 188, 255), 0.22) !important;
-}
-
-#luma-root .controls .play:hover {
-  filter: brightness(1.08) !important;
-  background: var(--accent, var(--spice-button, #d0bcff)) !important;
-}
-
-#luma-root .line {
-  color: var(--spice-text, #f3edf7) !important;
-  font-family: Inter, "Segoe UI", system-ui, sans-serif !important;
-  font-weight: 650 !important;
-  letter-spacing: -0.035em !important;
-  line-height: 1.3 !important;
-}
-
-#luma-root .line.active {
-  text-shadow: 0 5px 26px rgba(var(--accent-rgb, 208, 188, 255), 0.13) !important;
-}
-
-#luma-root .line .luma-lyric-token.active {
-  color: var(--accent, var(--spice-button, #d0bcff)) !important;
-  -webkit-text-fill-color: var(--accent, var(--spice-button, #d0bcff)) !important;
-  text-shadow: 0 0 18px rgba(var(--accent-rgb, 208, 188, 255), 0.32) !important;
-}
-
-#luma-root .message {
-  color: var(--spice-text, #f3edf7) !important;
-}
-
-#luma-root .settings {
-  color: var(--spice-text, #f3edf7) !important;
-  background: rgba(24, 21, 30, 0.96) !important;
-  border: 1px solid rgba(255, 255, 255, 0.13) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.42) !important;
-  backdrop-filter: blur(24px) saturate(1.15) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.15) !important;
-}
-
-#luma-root .settings-header {
-  background: rgba(30, 26, 38, 0.98) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
-}
-
-#luma-root .settings-eyebrow {
-  color: var(--accent, var(--spice-button, #d0bcff)) !important;
-}
-
-#luma-root .settings-section {
-  border-bottom-color: rgba(255, 255, 255, 0.09) !important;
-}
-
-#luma-root .settings-section h3,
-#luma-root .settings small,
-#luma-root .settings .setting-control output {
-  color: var(--spice-subtext, #cac4d0) !important;
-}
-
-#luma-root .settings .mode-trigger,
-#luma-root .settings select,
-#luma-root .settings .settings-close,
-#luma-root .settings .sync-adjust button,
-#luma-root .settings-footer button {
-  color: var(--spice-text, #f3edf7) !important;
-  background: rgba(255, 255, 255, 0.055) !important;
-  border: 1px solid rgba(255, 255, 255, 0.13) !important;
-  border-radius: 10px !important;
-}
-
-#luma-root .settings .mode-trigger:hover,
-#luma-root .settings select:hover,
-#luma-root .settings .settings-close:hover,
-#luma-root .settings .sync-adjust button:hover,
-#luma-root .settings-footer button:hover {
-  background: rgba(var(--accent-rgb, 208, 188, 255), 0.12) !important;
-  border-color: rgba(var(--accent-rgb, 208, 188, 255), 0.42) !important;
-}
-
-#luma-root .settings .mode-options {
-  background: rgba(28, 24, 36, 0.98) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-radius: 12px !important;
-}
-
-#luma-root .settings .mode-options [aria-selected="true"] {
-  color: var(--accent, var(--spice-button, #d0bcff)) !important;
-  background: rgba(var(--accent-rgb, 208, 188, 255), 0.13) !important;
-}
-
-#luma-root input[type="range"] {
-  --range-color: var(--accent, var(--spice-button, #d0bcff)) !important;
-}
-
-#luma-root :where(button, input, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--accent, var(--spice-button, #d0bcff)) !important;
-  outline-offset: 3px !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #luma-root .bar .tool,
-  #luma-root .controls button {
-    transition: none !important;
-  }
-}
-
 
 /* --------------------------------------------------------------------------
-   Material 3 integration
-   Luma Lyrics publishes artwork-derived --luma-* values and maps them to
-   Spotify's --spice-* variables only while Desktop colors is enabled. Read
-   the --spice-* interface here so the extension setting remains authoritative.
+   Inputs and toggles
    -------------------------------------------------------------------------- */
-:root {
-  --ambient-primary: var(--spice-button, #d0bcff);
-  --ambient-on-primary: var(--luma-on-primary, #241a30);
-  --ambient-main: var(--spice-main, #141218);
-  --ambient-sidebar: var(--spice-sidebar, #17141c);
-  --ambient-player: var(--spice-player, #1d1b20);
-  --ambient-card: var(--spice-card, #211f26);
-  --ambient-highlight: var(--spice-highlight, #2b2930);
-  --ambient-highlight-strong: var(--spice-highlight-elevated, #36343b);
-  --ambient-state-hover: color-mix(in srgb, var(--ambient-primary) 8%, var(--ambient-card));
-  --ambient-state-selected: color-mix(in srgb, var(--ambient-primary) 14%, var(--ambient-player));
-  --ambient-foreground: var(--spice-text, #f3edf7);
-  --ambient-muted-foreground: var(--spice-subtext, #cac4d0);
-  --ambient-outline: color-mix(in srgb, var(--ambient-foreground) 18%, transparent);
-  --ambient-outline-variant: color-mix(in srgb, var(--ambient-foreground) 11%, transparent);
-  --ambient-sidebar-hidden: none;
+.x-filterBox-filterInput {
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-shape-sm);
+  color: var(--md-on-surface);
 }
 
-.Root__main-view,
-.Root__nav-bar,
-.main-nowPlayingBar-nowPlayingBar,
-.main-card-card,
-.main-heroCard-card,
-.main-trackList-trackListRow,
-.main-globalNav-searchInputContainer .main-topBar-searchBar {
-  transition: background-color 220ms ease, border-color 220ms ease, color 180ms ease;
+.x-filterBox-filterInput:focus {
+  border-color: var(--md-primary);
 }
 
-.Root__nav-bar {
-  background: var(--ambient-sidebar);
-  border-inline-end: 1px solid var(--ambient-outline-variant);
-}
-.Root__main-view { background: var(--ambient-main); color: var(--ambient-foreground); }
-.main-nowPlayingBar-nowPlayingBar {
-  background: var(--ambient-player);
-  border-top-color: var(--ambient-outline-variant);
-}
-.main-card-card,
-.main-heroCard-card { color: var(--ambient-foreground); }
-.main-card-card:hover,
-.main-heroCard-card:hover,
-.main-trackList-trackListRow:hover {
-  background: var(--ambient-state-hover);
-}
-.main-trackList-trackListRow[aria-selected="true"] {
-  background: var(--ambient-state-selected);
-  color: var(--ambient-foreground);
-}
-.main-globalNav-searchInputContainer .main-topBar-searchBar:focus-within,
-.main-nowPlayingBar-nowPlayingBar button:focus-visible {
-  border-color: var(--ambient-primary);
-  outline-color: var(--ambient-primary);
+.x-filterBox-filterInput::placeholder {
+  color: var(--md-on-surface-variant);
 }
 
-/* Now Playing panel decluttering: only stable, link-level targets (concert
-   and shop links) are hidden. Earlier structural :has() container selectors
-   blanked the whole panel after a client markup change, so containers are
-   never hidden — worst case a hidden link leaves an empty gap. */
+input[type="text"],
+input[type="search"],
+input[type="number"] {
+  color-scheme: dark;
+}
+
+.x-toggle-indicatorWrapper {
+  background: var(--md-surface-container-highest);
+  border: 2px solid var(--md-outline);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.x-toggle-indicator {
+  background: var(--md-on-surface-variant);
+}
+
+input:checked ~ .x-toggle-indicatorWrapper {
+  background: var(--md-primary);
+  border-color: var(--md-primary);
+}
+
+input:checked ~ .x-toggle-indicatorWrapper .x-toggle-indicator {
+  background: var(--md-on-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Navigation — M3 navigation drawer language
+   -------------------------------------------------------------------------- */
+.main-globalNav-navLink,
+.main-yourLibraryX-navItem {
+  border-radius: var(--md-shape-full);
+  color: var(--md-on-surface-variant);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.main-globalNav-navLink:hover,
+.main-yourLibraryX-navItem:hover {
+  background: var(--md-state-hover);
+  color: var(--md-on-surface);
+}
+
+.main-globalNav-navLinkActive,
+.main-yourLibraryX-navItem[data-active="true"] {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+/* --------------------------------------------------------------------------
+   Entity headers (playlists, albums, artists)
+   -------------------------------------------------------------------------- */
+.main-entityHeader-container {
+  color: var(--md-on-surface);
+}
+
+.main-entityHeader-metaDataText,
+.main-entityHeader-metaDataText:not(:first-child)::before {
+  color: var(--md-on-surface-variant);
+}
+
+/* --------------------------------------------------------------------------
+   Now Playing view
+   -------------------------------------------------------------------------- */
+.main-nowPlayingView-section {
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-lg);
+}
+
+.main-nowPlayingView-sectionHeader,
+.main-nowPlayingView-headerText {
+  color: var(--md-on-surface-variant);
+}
+
+.main-nowPlayingWidget-coverArt .cover-art,
+.main-nowPlayingView-coverArt .cover-art {
+  background: var(--md-surface-container-high);
+  border-radius: var(--md-shape-md);
+}
+
+.main-nowPlayingView-contextItemInfo::before {
+  background: none;
+}
+
+/* Decluttering: only stable, link-level targets (concert and shop links).
+   Earlier structural :has() container selectors blanked the whole panel
+   after a client markup change, so containers are never hidden here —
+   theme.js hides whole sections by heading text instead. */
 :root [data-npv-root] a[href^="/concert/"],
 :root .NowPlayingView a[href^="/concert/"],
 :root [data-npv-root] a[href*="shop.spotify.com"],
@@ -386,9 +531,11 @@
   display: var(--ambient-sidebar-hidden) !important;
 }
 
-/* Transport glyphs are drawn over Spotify's existing buttons. SVGs remain in
+/* --------------------------------------------------------------------------
+   Transport glyphs are drawn over Spotify's existing buttons. SVGs remain in
    the accessibility tree and the buttons keep their native labels, titles,
-   focus, hover and click handlers. */
+   focus, hover and click handlers.
+   -------------------------------------------------------------------------- */
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Play"]::after,
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"]::after,
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Previous"]::after,
@@ -441,31 +588,20 @@
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Add to Liked Songs"],
 .main-nowPlayingBar-nowPlayingBar button[aria-label="Volume"] {
   position: relative;
-  color: var(--ambient-foreground);
-}
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Play"]:hover,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Pause"]:hover,
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Shuffle"][aria-pressed="true"],
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Repeat"][aria-pressed="true"],
-.main-nowPlayingBar-nowPlayingBar button[aria-label="Like"][aria-pressed="true"] {
-  color: var(--ambient-primary);
+  color: var(--md-on-surface-variant);
 }
 .main-nowPlayingBar-nowPlayingBar button[data-testid="play-button"] {
-  background: var(--ambient-primary);
-  color: var(--ambient-on-primary);
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+.main-nowPlayingBar-nowPlayingBar button[data-testid="play-button"]:hover {
+  color: var(--md-on-primary);
+  background: var(--md-primary);
 }
 
-/* Home recommendations. Spotify's accessible shelf labels are more stable
-   than its generated class names. Keep shortcuts, followed shows, and Recents
-   visible; each optional recommendation shelf can be restored independently
-   by setting its variable to `block` in a local override. */
-:root {
-  --ambient-home-top-mixes: none;
-  --ambient-home-made-for-you: none;
-  --ambient-home-more-like: none;
-  --ambient-home-recent-recommendations: none;
-}
-
+/* --------------------------------------------------------------------------
+   Home recommendation shelves — independent visibility controls
+   -------------------------------------------------------------------------- */
 section[data-testid="component-shelf"][aria-label="Your top mixes"] {
   display: var(--ambient-home-top-mixes) !important;
 }
@@ -482,17 +618,187 @@ section[data-testid="component-shelf"][aria-label="Based on your recent listenin
   display: var(--ambient-home-recent-recommendations) !important;
 }
 
+/* --------------------------------------------------------------------------
+   Luma Lyrics integration
+   Luma Lyrics creates its own #luma-root overlay and injects its own styles.
+   These rules are intentionally scoped to that overlay only.
+   -------------------------------------------------------------------------- */
+#luma-root {
+  color: var(--md-on-surface) !important;
+  font-family: var(--md-font) !important;
+}
+
+#luma-root .shade {
+  background: rgb(9 8 13 / var(--dim, 0.25)) !important;
+}
+
+#luma-root .bar .tool {
+  width: 42px !important;
+  height: 42px !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: var(--md-shape-md) !important;
+  background: color-mix(in srgb, var(--md-surface-container) 72%, transparent) !important;
+  color: var(--md-on-surface) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease !important;
+}
+
+#luma-root .bar .tool:hover {
+  background: var(--md-surface-container-highest) !important;
+  border-color: color-mix(in srgb, var(--md-primary) 55%, transparent) !important;
+  transform: translateY(-1px) !important;
+}
+
+#luma-root .bar .status {
+  color: color-mix(in srgb, var(--md-on-surface) 72%, transparent) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.035em !important;
+}
+
+#luma-root .player .title {
+  color: var(--md-on-surface) !important;
+  font-weight: 680 !important;
+  letter-spacing: -0.035em !important;
+}
+
+#luma-root .player .artist,
+#luma-root .times,
+#luma-root .volume {
+  color: var(--md-on-surface-variant) !important;
+}
+
+#luma-root .controls button {
+  border-radius: var(--md-shape-full) !important;
+  transition: background-color 150ms ease, transform 150ms ease !important;
+}
+
+#luma-root .controls button:hover {
+  background: var(--md-state-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+#luma-root .controls .play {
+  color: var(--md-on-primary) !important;
+  background: var(--md-primary) !important;
+  border-radius: var(--md-shape-full) !important;
+  box-shadow: 0 5px 22px color-mix(in srgb, var(--md-primary) 22%, transparent) !important;
+}
+
+#luma-root .controls .play:hover {
+  filter: brightness(1.08) !important;
+  background: var(--md-primary) !important;
+}
+
+#luma-root .line {
+  color: var(--md-on-surface) !important;
+  font-family: var(--md-font) !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.3 !important;
+}
+
+#luma-root .line.active {
+  text-shadow: 0 5px 26px color-mix(in srgb, var(--md-primary) 13%, transparent) !important;
+}
+
+#luma-root .line .luma-lyric-token.active {
+  color: var(--md-primary) !important;
+  -webkit-text-fill-color: var(--md-primary) !important;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--md-primary) 32%, transparent) !important;
+}
+
+#luma-root .message {
+  color: var(--md-on-surface) !important;
+}
+
+#luma-root .settings {
+  color: var(--md-on-surface) !important;
+  background: color-mix(in srgb, var(--md-surface-container) 96%, transparent) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: var(--md-shape-lg) !important;
+  box-shadow: var(--md-elevation-3) !important;
+  backdrop-filter: blur(24px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.15) !important;
+}
+
+#luma-root .settings-header {
+  background: color-mix(in srgb, var(--md-surface-container-high) 98%, transparent) !important;
+  border-bottom: 1px solid var(--md-outline-variant) !important;
+}
+
+#luma-root .settings-eyebrow {
+  color: var(--md-primary) !important;
+}
+
+#luma-root .settings-section {
+  border-bottom-color: var(--md-outline-variant) !important;
+}
+
+#luma-root .settings-section h3,
+#luma-root .settings small,
+#luma-root .settings .setting-control output {
+  color: var(--md-on-surface-variant) !important;
+}
+
+#luma-root .settings .mode-trigger,
+#luma-root .settings select,
+#luma-root .settings .settings-close,
+#luma-root .settings .sync-adjust button,
+#luma-root .settings-footer button {
+  color: var(--md-on-surface) !important;
+  background: color-mix(in srgb, var(--md-on-surface) 5%, transparent) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: var(--md-shape-sm) !important;
+}
+
+#luma-root .settings .mode-trigger:hover,
+#luma-root .settings select:hover,
+#luma-root .settings .settings-close:hover,
+#luma-root .settings .sync-adjust button:hover,
+#luma-root .settings-footer button:hover {
+  background: var(--md-state-focus) !important;
+  border-color: color-mix(in srgb, var(--md-primary) 42%, transparent) !important;
+}
+
+#luma-root .settings .mode-options {
+  background: color-mix(in srgb, var(--md-surface-container-high) 98%, transparent) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: var(--md-shape-md) !important;
+}
+
+#luma-root .settings .mode-options [aria-selected="true"] {
+  color: var(--md-primary) !important;
+  background: var(--md-state-focus) !important;
+}
+
+#luma-root input[type="range"] {
+  --range-color: var(--md-primary) !important;
+}
+
+#luma-root :where(button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--md-primary) !important;
+  outline-offset: 3px !important;
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion
+   -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .Root__main-view,
-  .Root__nav-bar,
-  .main-nowPlayingBar-nowPlayingBar,
   .main-card-card,
   .main-heroCard-card,
   .main-trackList-trackListRow,
-  .main-globalNav-searchInputContainer .main-topBar-searchBar {
+  .main-home-content .view-homeShortcutsGrid-shortcut,
+  .main-genericButton-button,
+  .main-nowPlayingBar-nowPlayingBar button,
+  .main-contextMenu-menuItemButton,
+  .main-globalNav-navLink,
+  .main-yourLibraryX-navItem {
     transition: none;
   }
-  .main-home-content .view-homeShortcutsGrid-shortcut {
-    transition: none;
+  #luma-root .bar .tool,
+  #luma-root .controls button {
+    transition: none !important;
   }
 }
