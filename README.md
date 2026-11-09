@@ -86,15 +86,15 @@ This is a CSS integration with the current Luma Lyrics v2 DOM structure, not a f
 
 The following checks are required before calling a release fully verified. They have **not** been run in a live Spotify client in this repository-editing environment.
 
-| Area | Standalone: both schemes | Liquify + add-on |
+| Area | Standalone: both schemes | Luma Ambient + Luma Lyrics |
 |---|---|---|
-| Home | Check spacing, cards, headings, scroll | Check shell styling and card layout |
-| Search | Check search field, results, filters | Check search and navigation |
-| Playlists | Check headers, rows, selected/hover states | Check playlist content and controls |
-| Library | Check navigation, filters, saved items | Check sidebar and library interactions |
-| Playback | Check play/pause, seek, volume, queue, device controls | Confirm all controls remain usable |
-| Lyrics | Not a built-in Luma feature | Check Liquid Lyrics, themed lyrics, translation, romanization, fullscreen/cinema, sidebar card, sync editor |
-| Accessibility | Keyboard focus, contrast, reduced motion | Repeat focus and motion checks |
+| Home | Check spacing, cards, headings, scroll | Check Spotify shell and return from lyrics |
+| Search | Check search field, results, filters | Check search and navigation remain unaffected |
+| Playlists | Check headers, rows, selected/hover states | Check playlist content and controls remain unaffected |
+| Library | Check navigation, filters, saved items | Check sidebar and library interactions remain unaffected |
+| Playback | Check play/pause, seek, volume, queue, device controls | Check extension transport and Spotify player controls |
+| Lyrics | Not a built-in Luma feature | Check overlay, word/line/gentle/static modes, translation, romanization, artwork accent, and settings |
+| Accessibility | Keyboard focus, contrast, reduced motion | Check overlay focus, contrast, reduced motion, and keyboard operation |
 
 Also verify Spotify's current client version and Spicetify version after every major Spotify UI update. Spotify's generated class names can change.
 
@@ -103,7 +103,6 @@ Also verify Spotify's current client version and Spicetify version after every m
 - **Theme does not appear:** confirm the folder is named exactly `Luma-Ambient` and contains both `color.ini` and `user.css`.
 - **Scheme does not change:** use the exact scheme name (`ambient` or `ambient-soft`) and run `spicetify apply`.
 - **Changes do not appear:** fully reload Spotify after applying. Check the Spicetify CLI output for errors.
-- **Liquify add-on disappears:** a Liquify update may replace its hosted/local CSS. Re-append the backed-up add-on block.
 - **A Spotify update breaks a selector:** inspect the affected element in Spotify's developer tools and update only the corresponding narrow selector.
 
 ## Project files
@@ -111,7 +110,6 @@ Also verify Spotify's current client version and Spicetify version after every m
 - `color.ini` — Spicetify color schemes.
 - `user.css` — standalone theme styling and design tokens.
 - `declutter.css` — optional compact-spacing add-on.
-- `liquify-addon.css` — additive styling for use with Liquify.
 - `manifest.json` — Spicetify Marketplace-style theme metadata.
 - `preview.svg` — illustrative preview.
 
@@ -123,6 +121,6 @@ See [CHANGELOG.md](CHANGELOG.md) for changes.
 
 ## License and attribution
 
-No license file was present in the original repository, so this update does not assign a new license or claim MIT licensing. Until the repository owner adds an explicit license, the source remains under the default copyright terms. Liquify remains the property of its original author and is not bundled or redistributed here.
+No license file was present in the original repository, so this update does not assign a new license or claim MIT licensing. Until the repository owner adds an explicit license, the source remains under the default copyright terms. Luma Lyrics remains a separate extension; this theme only supplies scoped CSS styling and does not bundle or redistribute its code.
 
 Spotify is a trademark of Spotify AB. Spicetify is an independent community project.
