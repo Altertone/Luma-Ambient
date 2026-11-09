@@ -1,7 +1,7 @@
 [
   {
     "name": "Luma Ambient",
-    "description": "A calmer, low-clutter Spicetify theme with two muted-violet schemes and optional Liquify-compatible CSS.",
+    "description": "A calm, muted-violet Spicetify theme with native Luma Lyrics styling and two dark color schemes.",
     "preview": "preview.svg",
     "readme": "README.md",
     "usercss": "user.css",
