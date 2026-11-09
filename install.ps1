@@ -1,4 +1,4 @@
-# Luma Ambient installer — theme + first-run companion extension in one step.
+# Luma Ambient installer — theme + first-run setup script in one step.
 #
 # Usage:
 #   .\install.ps1              install (or update) and apply
@@ -19,10 +19,9 @@ if (-not (Get-Command spicetify -ErrorAction SilentlyContinue)) {
 $configPath = (& spicetify -c).Trim()
 $configDir = Split-Path $configPath -Parent
 $themesDir = Join-Path $configDir "Themes"
-$extensionsDir = Join-Path $configDir "Extensions"
 
 $srcDir = $PSScriptRoot
-$themeFiles = @("color.ini", "user.css", "declutter.css", "manifest.json", "preview.svg")
+$themeFiles = @("color.ini", "user.css", "declutter.css", "theme.js", "manifest.json", "preview.svg")
 
 foreach ($file in $themeFiles) {
   if (-not (Test-Path (Join-Path $srcDir $file))) {
@@ -30,24 +29,27 @@ foreach ($file in $themeFiles) {
     exit 1
   }
 }
-if (-not (Test-Path (Join-Path $srcDir "luma-ambient-setup.js"))) {
-  Write-Error "luma-ambient-setup.js not found next to install.ps1."
-  exit 1
-}
 
-New-Item -ItemType Directory -Force -Path (Join-Path $themesDir "Luma-Ambient"), $extensionsDir | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $themesDir "Luma-Ambient") | Out-Null
 
 foreach ($file in $themeFiles) {
   Copy-Item (Join-Path $srcDir $file) (Join-Path $themesDir "Luma-Ambient" $file) -Force
 }
-Copy-Item (Join-Path $srcDir "luma-ambient-setup.js") (Join-Path $extensionsDir "luma-ambient-setup.js") -Force
 
-spicetify config current_theme Luma-Ambient color_scheme ambient
-spicetify config extensions luma-ambient-setup.js
+# The theme script (first-run prompt) needs JS injection enabled.
+spicetify config inject_theme_js 1 | Out-Null
+
+# Set the theme, but keep the user's existing color scheme if Luma Ambient
+# was already the active theme (re-runs and updates shouldn't reset it).
+$previousTheme = (& spicetify config current_theme 2>$null)
+if ($LASTEXITCODE -ne 0) { $previousTheme = "" }
+spicetify config current_theme Luma-Ambient | Out-Null
+if ("$previousTheme".Trim() -ne "Luma-Ambient") {
+  spicetify config color_scheme ambient | Out-Null
+}
 
 Write-Host "Installed:"
 Write-Host "  $(Join-Path $themesDir 'Luma-Ambient')"
-Write-Host "  $(Join-Path $extensionsDir 'luma-ambient-setup.js')"
 
 if ($NoApply) {
   Write-Host "Skipped spicetify apply (-NoApply). Run it manually when ready."

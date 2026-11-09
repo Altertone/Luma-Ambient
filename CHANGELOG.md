@@ -29,6 +29,7 @@
 ## Unreleased
 
 - Added `luma-ambient-setup.js`, an optional first-run companion extension that asks whether Luma Lyrics is installed and adapts the UI to the answer, such as hiding Spotify's native lyrics button so the playbar keeps a single lyrics toggle.
+- Added `install.sh` and `install.ps1` one-step installers that copy the theme and the companion extension, enable both, and preserve an existing color scheme on re-runs.
 - The setup extension auto-detects Luma Lyrics and Luma Plus after the first run and keeps its saved state in step without re-prompting.
 - Used Spotify's accessible Home shelf labels to hide selected recommendation shelves independently while preserving shortcut playlists, followed shows, and Recents. Documented per-shelf CSS overrides.
 - Refined Home spacing and rounded card surfaces for a calmer, more consistent layout.

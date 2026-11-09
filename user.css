@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,500,0,0");
-/* Luma Ambient 1.2.0
+/* Luma Ambient 1.2.1
  * Standalone Spicetify theme. Keep selectors narrow and lyric-neutral.
  */
 
@@ -375,21 +375,14 @@
   outline-color: var(--ambient-primary);
 }
 
-/* Sidebar cards matched by their destination or role; the player and lyrics
-   preview are deliberately not selected. Set this variable to `block` in a
-   local CSS override to restore the hidden sections. */
+/* Now Playing panel decluttering: only stable, link-level targets (concert
+   and shop links) are hidden. Earlier structural :has() container selectors
+   blanked the whole panel after a client markup change, so containers are
+   never hidden — worst case a hidden link leaves an empty gap. */
 :root [data-npv-root] a[href^="/concert/"],
 :root .NowPlayingView a[href^="/concert/"],
 :root [data-npv-root] a[href*="shop.spotify.com"],
-:root .NowPlayingView a[href*="shop.spotify.com"],
-:root [data-npv-root] > div > div:has(a[href^="/concert/"]),
-:root [data-npv-root] > div > div:has(a[href*="shop.spotify.com"]),
-:root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has(a[href^="/concert/"]),
-:root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has(a[href*="shop.spotify.com"]),
-:root [data-npv-root] > div > div > section:has([data-encore-id="listRow"]):not(:has(img)),
-:root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has([data-encore-id="listRow"]):not(:has(img)),
-:root [data-npv-root] > div > div > div:has(> ul):not(:has(a[href*="shop.spotify.com"])),
-:root .NowPlayingView [data-testid="NPV_Panel_OpenDiv"] > div:has(> ul):not(:has(a[href*="shop.spotify.com"])) {
+:root .NowPlayingView a[href*="shop.spotify.com"] {
   display: var(--ambient-sidebar-hidden) !important;
 }
 

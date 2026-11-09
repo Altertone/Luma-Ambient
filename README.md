@@ -28,20 +28,29 @@ This is an illustrative theme preview, not a screenshot of Spotify. Real Spotify
 ## Install as a standalone theme
 
 1. Install and configure [Spicetify](https://spicetify.app/docs/getting-started).
-2. Download this repository and copy the `Luma-Ambient` folder into your Spicetify Themes directory:
+2. Download this repository and run the installer from the theme folder:
 
-   - Linux: `~/.config/spicetify/Themes/`
-   - macOS: `~/.config/spicetify/Themes/`
-   - Windows: `%appdata%\\spicetify\\Themes\\`
+   - Linux/macOS:
 
-3. Apply the theme:
+     ```bash
+     ./install.sh
+     ```
 
-   ```bash
-   spicetify config current_theme Luma-Ambient color_scheme ambient
-   spicetify apply
-   ```
+     Or without downloading first:
 
-4. To switch schemes:
+     ```bash
+     curl -fsSL https://raw.githubusercontent.com/Shahisha1/Luma-Ambient/main/install.sh | bash
+     ```
+
+   - Windows (PowerShell):
+
+     ```powershell
+     .\install.ps1
+     ```
+
+   The installer copies the theme and the first-run companion extension into your Spicetify directories, enables both, and applies. It is safe to re-run for updates, and it preserves your existing color scheme if the theme is already active.
+
+3. To switch schemes manually:
 
    ```bash
    spicetify config current_theme Luma-Ambient color_scheme ambient-soft
@@ -50,27 +59,25 @@ This is an illustrative theme preview, not a screenshot of Spotify. Real Spotify
 
 The scheme names correspond to the sections in `color.ini`.
 
+### Manual install
+
+If you prefer not to run the installer, copy the theme folder to your Spicetify `Themes/` directory and `luma-ambient-setup.js` to `Extensions/`, then:
+
+```bash
+spicetify config current_theme Luma-Ambient color_scheme ambient
+spicetify config extensions luma-ambient-setup.js
+spicetify apply
+```
+
 ## First-run setup
 
-Luma Ambient ships a tiny companion script, `luma-ambient-setup.js`. On the first launch it shows a minimal prompt asking whether the [Luma Lyrics](https://github.com/Shahisha1/Luma-Lyrics) extension is installed, and adapts the interface to your answer — for example, hiding Spotify's native lyrics button while Luma Lyrics is active so the playbar keeps a single lyrics toggle instead of two.
+The theme script `theme.js` (injected automatically with `inject_theme_js 1`, the same mechanism the Comfy theme uses) asks once on the first launch whether the [Luma Lyrics](https://github.com/Shahisha1/Luma-Lyrics) extension is installed, and adapts the interface to your answer — for example, hiding Spotify's native lyrics button while Luma Lyrics is active so the playbar keeps a single lyrics toggle instead of two.
 
-The theme itself stays CSS-only; the script is optional and only adjusts a few narrow, reversible UI details. Luma Lyrics and Luma Plus are detected automatically afterwards, so the setup stays correct if you install or remove them later without prompting again.
+Luma Lyrics and Luma Plus are detected automatically afterwards, so the setup stays correct if you install or remove them later without prompting again. The prompt only appears once; your answer is stored in `localStorage`.
 
-Install the companion script:
+To change your answer later, open Spotify's console and run `LumaAmbient.ask()`, or `LumaAmbient.reset()` to forget the saved answer. Dismissing the prompt (Escape or clicking outside) leaves everything untouched and asks again on the next launch.
 
-1. Copy `luma-ambient-setup.js` into your Spicetify Extensions directory:
-
-   - Linux/macOS: `~/.config/spicetify/Extensions/`
-   - Windows: `%appdata%\spicetify\Extensions\`
-
-2. Enable it and apply:
-
-   ```bash
-   spicetify config extensions luma-ambient-setup.js
-   spicetify apply
-   ```
-
-To change your answer later, open Spotify's console and run `LumaAmbientSetup.ask()`, or `LumaAmbientSetup.reset()` to forget the saved answer. Dismissing the prompt (Escape or clicking outside) leaves everything untouched and asks again on the next launch.
+If you prefer no prompt at all, delete `theme.js` from the installed theme folder and run `spicetify config inject_theme_js 0 && spicetify apply`; the theme then behaves as pure CSS.
 
 ## Minimal Now Playing sidebar
 
@@ -167,6 +174,7 @@ Also verify Spotify's current client version and Spicetify version after every m
 - `user.css` — standalone theme styling and design tokens.
 - `declutter.css` — optional compact-spacing add-on.
 - `luma-ambient-setup.js` — optional first-run companion extension (see "First-run setup").
+- `install.sh`, `install.ps1` — one-step installer for the theme and companion extension.
 - `manifest.json` — Spicetify Marketplace-style theme metadata.
 - `preview.svg` — illustrative preview.
 

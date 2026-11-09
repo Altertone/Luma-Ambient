@@ -31,7 +31,7 @@ EXTENSIONS_DIR="$CONFIG_DIR/Extensions"
 
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-THEME_FILES=(color.ini user.css declutter.css manifest.json preview.svg)
+THEME_FILES=(color.ini user.css declutter.css theme.js manifest.json preview.svg)
 
 for file in "${THEME_FILES[@]}"; do
   if [[ ! -f "$SRC_DIR/$file" ]]; then
@@ -39,24 +39,27 @@ for file in "${THEME_FILES[@]}"; do
     exit 1
   fi
 done
-if [[ ! -f "$SRC_DIR/luma-ambient-setup.js" ]]; then
-  echo "error: luma-ambient-setup.js not found next to install.sh." >&2
-  exit 1
-fi
 
-mkdir -p "$THEMES_DIR/Luma-Ambient" "$EXTENSIONS_DIR"
+mkdir -p "$THEMES_DIR/Luma-Ambient"
 
 for file in "${THEME_FILES[@]}"; do
   cp "$SRC_DIR/$file" "$THEMES_DIR/Luma-Ambient/$file"
 done
-cp "$SRC_DIR/luma-ambient-setup.js" "$EXTENSIONS_DIR/luma-ambient-setup.js"
 
-spicetify config current_theme Luma-Ambient color_scheme ambient
+# The theme script (first-run prompt) needs JS injection enabled.
+spicetify config inject_theme_js 1
+
+# Set the theme, but keep the user's existing color scheme if Luma Ambient
+# was already the active theme (re-runs and updates shouldn't reset it).
+PREVIOUS_THEME="$(spicetify config current_theme 2>/dev/null || echo "")"
+spicetify config current_theme Luma-Ambient
+if [[ "$PREVIOUS_THEME" != "Luma-Ambient" ]]; then
+  spicetify config color_scheme ambient
+fi
 spicetify config extensions luma-ambient-setup.js
 
 echo "Installed:"
 echo "  $THEMES_DIR/Luma-Ambient"
-echo "  $EXTENSIONS_DIR/luma-ambient-setup.js"
 
 if $NO_APPLY; then
   echo "Skipped spicetify apply (--no-apply). Run it manually when ready."

@@ -1,23 +1,27 @@
-// Luma Ambient Setup — first-run companion for the Luma Ambient Spicetify theme.
-//
-// Spicetify themes are CSS-only, so this small extension ships beside the
-// theme and asks once whether the Luma Lyrics extension is installed. The
-// answer drives a narrow set of UI adjustments — for example hiding Spotify's
-// native lyrics button while Luma Lyrics is active, so the playbar keeps a
-// single lyrics toggle instead of two.
-//
-// Luma Lyrics and Luma Plus are detected automatically afterwards; the saved
-// answer is corrected silently if reality changes.
-//
-// Console API:
-//   LumaAmbientSetup.ask()    — reopen the prompt
-//   LumaAmbientSetup.reset()  — forget the saved answer and reopen the prompt
-//   LumaAmbientSetup.getConfig()
-(async () => {
+/* Luma Ambient — theme script.
+ *
+ * Injected by Spicetify alongside user.css when `inject_theme_js` is enabled
+ * (same mechanism the Comfy theme uses). On the first launch it asks whether
+ * the Luma Lyrics extension is installed and adapts a few UI details to the
+ * answer — for example hiding Spotify's native lyrics button so the playbar
+ * keeps a single lyrics toggle.
+ *
+ * Luma Lyrics and Luma Plus are detected automatically afterwards; the saved
+ * answer is corrected silently if reality changes.
+ *
+ * Console API (mirrors Comfy's window.Comfy):
+ *   LumaAmbient.ask()    — reopen the prompt
+ *   LumaAmbient.reset()  — forget the saved answer and reopen the prompt
+ *   LumaAmbient.config()
+ */
+(async function lumaAmbient() {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  while (!(globalThis.Spicetify && document.body)) await wait(300);
-  if (globalThis.__lumaAmbientSetupLoaded) return;
-  globalThis.__lumaAmbientSetupLoaded = true;
+  while (!(globalThis.Spicetify && document.body)) {
+    setTimeout(lumaAmbient, 10);
+    return;
+  }
+  if (globalThis.__lumaAmbientThemeLoaded) return;
+  globalThis.__lumaAmbientThemeLoaded = true;
 
   const KEY = "luma-ambient-setup";
   const CLASS_LYRICS = "luma-with-lyrics";
@@ -52,11 +56,12 @@
     Boolean(globalThis.LumaPlus || document.getElementById("luma-plus-style"));
 
   const HIDE_RULES = `
-/* Luma Ambient Setup — keep a single lyrics button on the playbar.
+/* Luma Ambient — keep a single lyrics button on the playbar.
    Spotify's own lyrics control is hidden while Luma Lyrics provides the
    lyrics UI. Luma's own toggle is excluded from every rule. */
 html.${CLASS_LYRICS} button[data-testid="lyrics-button"]:not([aria-label="Luma Lyrics"]),
 html.${CLASS_LYRICS} button[data-testid="lyrics-toggle-button"]:not([aria-label="Luma Lyrics"]),
+html.${CLASS_LYRICS} .main-nowPlayingBar-lyricsButton:not([aria-label="Luma Lyrics"]),
 html.${CLASS_LYRICS} button[title="Lyrics"]:not([aria-label="Luma Lyrics"]),
 html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics"]) {
   display: none !important;
@@ -83,18 +88,18 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   function applyPlus() {}
 
   const UI_CSS = `
-#luma-ambient-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);opacity:0;z-index:1000002;pointer-events:none;padding:10px 14px;border-radius:999px;background:rgba(33,31,38,.92);color:#f3edf7;border:1px solid rgba(208,188,255,.25);font:600 13px/1.2 Inter,"Segoe UI",sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.35);backdrop-filter:blur(14px);transition:opacity .18s ease,transform .18s ease}
+#luma-ambient-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);opacity:0;z-index:1000002;pointer-events:none;padding:10px 14px;border-radius:var(--luma-radius-pill,999px);background:rgba(33,31,38,.92);color:#f3edf7;border:1px solid rgba(208,188,255,.25);font:600 13px/1.2 Inter,"Segoe UI",sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.35);backdrop-filter:blur(14px);transition:opacity .18s ease,transform .18s ease}
 #luma-ambient-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #luma-ambient-scrim{position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;background:rgba(0,0,0,.5);opacity:0;transition:opacity .18s ease}
 #luma-ambient-scrim.show{opacity:1}
-#luma-ambient-scrim .luma-setup{width:min(380px,calc(100vw - 48px));padding:26px 26px 22px;border-radius:16px;background:var(--spice-player,#1d1b20);border:1px solid color-mix(in srgb,var(--spice-text,#f3edf7) 12%,transparent);box-shadow:0 24px 72px rgba(0,0,0,.45);color:var(--spice-text,#f3edf7);font-family:Inter,"Segoe UI",system-ui,sans-serif;transform:translateY(8px) scale(.98);transition:transform .18s ease}
+#luma-ambient-scrim .luma-setup{width:min(380px,calc(100vw - 48px));padding:24px 24px 20px;border-radius:var(--luma-radius-lg,16px);background:var(--spice-player,#1d1b20);border:1px solid color-mix(in srgb,var(--spice-text,#f3edf7) 12%,transparent);box-shadow:0 24px 72px rgba(0,0,0,.45);color:var(--spice-text,#f3edf7);font-family:Inter,"Segoe UI",system-ui,sans-serif;transform:translateY(8px) scale(.98);transition:transform .18s ease}
 #luma-ambient-scrim.show .luma-setup{transform:none}
 #luma-ambient-scrim h2{margin:0 0 8px;font-size:15px;font-weight:650;letter-spacing:-.02em}
 #luma-ambient-scrim p{margin:0 0 18px;font-size:13px;line-height:1.55;color:var(--spice-subtext,#cac4d0)}
 #luma-ambient-scrim .luma-setup-hint{display:none;margin:-10px 0 14px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--spice-button,#d0bcff)}
 #luma-ambient-scrim .luma-setup-hint.visible{display:block}
 #luma-ambient-scrim .luma-setup-actions{display:flex;gap:8px}
-#luma-ambient-scrim .luma-setup-actions button{flex:1;padding:9px 14px;border-radius:999px;font:600 13px/1 Inter,"Segoe UI",sans-serif;cursor:pointer;transition:filter .15s ease,background-color .15s ease,border-color .15s ease}
+#luma-ambient-scrim .luma-setup-actions button{flex:1;padding:9px 14px;border-radius:var(--luma-radius-sm,8px);font:600 13px/1 Inter,"Segoe UI",sans-serif;cursor:pointer;transition:filter .15s ease,background-color .15s ease,border-color .15s ease}
 #luma-ambient-scrim .luma-setup-yes{border:1px solid transparent;background:var(--spice-button,#d0bcff);color:var(--luma-on-primary,#241a30)}
 #luma-ambient-scrim .luma-setup-yes:hover{filter:brightness(1.08)}
 #luma-ambient-scrim .luma-setup-no{border:1px solid color-mix(in srgb,var(--spice-text,#f3edf7) 22%,transparent);background:transparent;color:var(--spice-text,#f3edf7);font-weight:500}
@@ -256,7 +261,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     subtree: true,
   });
 
-  globalThis.LumaAmbientSetup = {
+  globalThis.LumaAmbient = {
     version: "1.0.0",
     ask: () => openDialog(detectLyrics()),
     reset: () => {
@@ -267,13 +272,13 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       apply();
       openDialog();
     },
-    getConfig: () => ({
+    config: () => ({
       ...state,
       detectedLyrics: detectLyrics(),
       detectedPlus: detectPlus(),
     }),
   };
   console.info(
-    "[Luma Ambient Setup] Loaded. Reopen the prompt with LumaAmbientSetup.ask()",
+    "[Luma Ambient] theme.js loaded. Reopen the setup prompt with LumaAmbient.ask()",
   );
 })();
