@@ -11,6 +11,7 @@ Luma Ambient is a standalone Spicetify theme with built-in, automatically applie
 - Material Symbols Rounded icons for labelled playback controls.
 - A minimal Now Playing sidebar that preserves the player and lyrics preview and hides supported Credits, On tour, Merch, and queue sections.
 - Home keeps your shortcut grid, followed shows, and Recents while hiding supported recommendation shelves by default; each shelf has an independent CSS visibility control.
+- Home shortcuts and content cards use a consistent rounded surface style with quiet spacing and hover feedback.
 - Consistent surface, text, border, spacing, and radius tokens.
 - Calmer navigation, cards, track rows, search, and now-playing bar.
 - Essential navigation, search, playback, focus indicators, and selected states remain visible.

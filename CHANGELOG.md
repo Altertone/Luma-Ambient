@@ -29,3 +29,4 @@
 ## Unreleased
 
 - Used Spotify's accessible Home shelf labels to hide selected recommendation shelves independently while preserving shortcut playlists, followed shows, and Recents. Documented per-shelf CSS overrides.
+- Refined Home spacing and rounded card surfaces for a calmer, more consistent layout.

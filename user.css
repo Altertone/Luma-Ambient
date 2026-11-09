@@ -85,6 +85,26 @@
   background: var(--ambient-surface-selected);
 }
 
+/* Home uses the same quiet spacing and rounded surface language as the rest
+   of the theme. Keep Spotify's own card content and personal shortcuts intact. */
+.main-home-content > section {
+  margin-block-end: var(--luma-space-4);
+}
+
+.main-home-content .view-homeShortcutsGrid-shortcut {
+  overflow: hidden;
+  border-radius: var(--luma-radius-md);
+  transition: background-color 180ms ease, border-radius 180ms ease;
+}
+
+.main-home-content .view-homeShortcutsGrid-shortcut:hover {
+  background: color-mix(in srgb, var(--ambient-primary) 8%, var(--ambient-card));
+}
+
+.main-home-content section[data-testid="component-shelf"] .main-card-card {
+  border-radius: var(--luma-radius-lg);
+}
+
 /* Playback layout: preserve the transport, seek bar, device and volume controls. */
 .main-nowPlayingBar-center .playback-bar {
   max-width: 720px;
@@ -477,6 +497,9 @@ section[data-testid="component-shelf"][aria-label="Based on your recent listenin
   .main-heroCard-card,
   .main-trackList-trackListRow,
   .main-globalNav-searchInputContainer .main-topBar-searchBar {
+    transition: none;
+  }
+  .main-home-content .view-homeShortcutsGrid-shortcut {
     transition: none;
   }
 }
