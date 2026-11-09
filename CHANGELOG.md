@@ -7,6 +7,6 @@
 - Replaced broad card and universal scrollbar selectors with narrow Spotify UI selectors.
 - Preserved navigation, search, playback controls, selected states, and keyboard focus.
 - Added reduced-motion handling and an optional compact-spacing block.
-- Added a separate Liquify CSS add-on that avoids Liquify runtime and lyric selectors.
+- Added native Luma Lyrics styling scoped to its fullscreen overlay, settings, player controls, and artwork-derived accent.
 - Rewrote installation, compatibility, troubleshooting, and manual test documentation.
 - Corrected Marketplace metadata format and removed the unsupported MIT license claim.
