@@ -115,3 +115,179 @@
     transition: none;
   }
 }
+
+
+/* --------------------------------------------------------------------------
+   Luma Lyrics integration
+   Luma Lyrics creates its own #luma-root overlay and injects its own styles.
+   These rules are intentionally scoped to that overlay only. They use the
+   extension's artwork-derived --accent / --accent-rgb when available, while
+   leaving lyric timing, word highlighting, scrolling and player behavior alone.
+   This block is active automatically when Luma Ambient is the selected theme.
+   -------------------------------------------------------------------------- */
+
+#luma-root {
+  color: var(--spice-text, #f3edf7) !important;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif !important;
+}
+
+#luma-root .shade {
+  background: rgba(9, 8, 13, var(--dim, 0.25)) !important;
+}
+
+#luma-root .bar .tool {
+  width: 42px !important;
+  height: 42px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 12px !important;
+  background: rgba(24, 21, 30, 0.72) !important;
+  color: var(--spice-text, #f3edf7) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease !important;
+}
+
+#luma-root .bar .tool:hover {
+  background: rgba(54, 48, 66, 0.88) !important;
+  border-color: rgba(var(--accent-rgb, 208, 188, 255), 0.55) !important;
+  transform: translateY(-1px) !important;
+}
+
+#luma-root .bar .status {
+  color: rgba(243, 237, 247, 0.72) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.035em !important;
+}
+
+#luma-root .player .title {
+  color: var(--spice-text, #f3edf7) !important;
+  font-weight: 680 !important;
+  letter-spacing: -0.035em !important;
+}
+
+#luma-root .player .artist,
+#luma-root .times,
+#luma-root .volume {
+  color: var(--spice-subtext, #cac4d0) !important;
+}
+
+#luma-root .controls button {
+  border-radius: 12px !important;
+  transition: background-color 150ms ease, transform 150ms ease !important;
+}
+
+#luma-root .controls button:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  transform: translateY(-1px) !important;
+}
+
+#luma-root .controls .play {
+  color: var(--spice-main, #141218) !important;
+  background: var(--accent, var(--spice-button, #d0bcff)) !important;
+  border-radius: 50% !important;
+  box-shadow: 0 5px 22px rgba(var(--accent-rgb, 208, 188, 255), 0.22) !important;
+}
+
+#luma-root .controls .play:hover {
+  filter: brightness(1.08) !important;
+  background: var(--accent, var(--spice-button, #d0bcff)) !important;
+}
+
+#luma-root .line {
+  color: var(--spice-text, #f3edf7) !important;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.3 !important;
+}
+
+#luma-root .line.active {
+  text-shadow: 0 5px 26px rgba(var(--accent-rgb, 208, 188, 255), 0.13) !important;
+}
+
+#luma-root .line .luma-lyric-token.active {
+  color: var(--accent, var(--spice-button, #d0bcff)) !important;
+  -webkit-text-fill-color: var(--accent, var(--spice-button, #d0bcff)) !important;
+  text-shadow: 0 0 18px rgba(var(--accent-rgb, 208, 188, 255), 0.32) !important;
+}
+
+#luma-root .message {
+  color: var(--spice-text, #f3edf7) !important;
+}
+
+#luma-root .settings {
+  color: var(--spice-text, #f3edf7) !important;
+  background: rgba(24, 21, 30, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.42) !important;
+  backdrop-filter: blur(24px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.15) !important;
+}
+
+#luma-root .settings-header {
+  background: rgba(30, 26, 38, 0.98) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+#luma-root .settings-eyebrow {
+  color: var(--accent, var(--spice-button, #d0bcff)) !important;
+}
+
+#luma-root .settings-section {
+  border-bottom-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+#luma-root .settings-section h3,
+#luma-root .settings small,
+#luma-root .settings .setting-control output {
+  color: var(--spice-subtext, #cac4d0) !important;
+}
+
+#luma-root .settings .mode-trigger,
+#luma-root .settings select,
+#luma-root .settings .settings-close,
+#luma-root .settings .sync-adjust button,
+#luma-root .settings-footer button {
+  color: var(--spice-text, #f3edf7) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  border-radius: 10px !important;
+}
+
+#luma-root .settings .mode-trigger:hover,
+#luma-root .settings select:hover,
+#luma-root .settings .settings-close:hover,
+#luma-root .settings .sync-adjust button:hover,
+#luma-root .settings-footer button:hover {
+  background: rgba(var(--accent-rgb, 208, 188, 255), 0.12) !important;
+  border-color: rgba(var(--accent-rgb, 208, 188, 255), 0.42) !important;
+}
+
+#luma-root .settings .mode-options {
+  background: rgba(28, 24, 36, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 12px !important;
+}
+
+#luma-root .settings .mode-options [aria-selected="true"] {
+  color: var(--accent, var(--spice-button, #d0bcff)) !important;
+  background: rgba(var(--accent-rgb, 208, 188, 255), 0.13) !important;
+}
+
+#luma-root input[type="range"] {
+  --range-color: var(--accent, var(--spice-button, #d0bcff)) !important;
+}
+
+#luma-root :where(button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent, var(--spice-button, #d0bcff)) !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #luma-root .bar .tool,
+  #luma-root .controls button {
+    transition: none !important;
+  }
+}
