@@ -10,6 +10,7 @@ Luma Ambient is a standalone Spicetify theme with built-in, automatically applie
 - Artwork-reactive Material 3 colors from Luma Lyrics when its **Desktop colors** setting is enabled; both Ambient schemes remain the standalone fallback.
 - Material Symbols Rounded icons for labelled playback controls.
 - A minimal Now Playing sidebar that preserves the player and lyrics preview and hides supported Credits, On tour, Merch, and queue sections.
+- Home keeps your shortcut grid, followed shows, and Recents while hiding supported recommendation shelves by default; each shelf has an independent CSS visibility control.
 - Consistent surface, text, border, spacing, and radius tokens.
 - Calmer navigation, cards, track rows, search, and now-playing bar.
 - Essential navigation, search, playback, focus indicators, and selected states remain visible.
@@ -58,9 +59,26 @@ The theme is CSS-only and has no settings interface. To show the sections again,
 :root { --ambient-sidebar-hidden: block; }
 ```
 
+## Home recommendation visibility
+
+Home selectors use Spotify's accessible shelf labels. The current theme hides **Your top mixes**, **Made for you**, **More like …**, and **Based on your recent listening** shelves by default. It leaves your shortcut grid, **Your shows**, and **Recents** visible.
+
+To restore a shelf, add the matching setting at the end of `user.css` and run `spicetify apply`:
+
+```css
+:root {
+  --ambient-home-top-mixes: block;
+  --ambient-home-made-for-you: block;
+  --ambient-home-more-like: block;
+  --ambient-home-recent-recommendations: block;
+}
+```
+
+Set only the variables for shelves you want to show. Remove the override to hide them again. Spotify may change its accessible shelf labels between client versions.
+
 ## Optional decluttering
 
-The core theme already reduces visual noise without hiding controls. For a slightly tighter Home layout, append the contents of `declutter.css` to the end of your theme's `user.css`, then run `spicetify apply`.
+For tighter spacing, append the contents of `declutter.css` to the end of your theme's `user.css`, then run `spicetify apply`.
 
 To undo it, remove the block between the `LUMA DECLUTTER START` and `LUMA DECLUTTER END` comments from `user.css` and apply again. No essential controls or navigation items are hidden.
 

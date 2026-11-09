@@ -442,6 +442,33 @@
   color: var(--ambient-on-primary);
 }
 
+/* Home recommendations. Spotify's accessible shelf labels are more stable
+   than its generated class names. Keep shortcuts, followed shows, and Recents
+   visible; each optional recommendation shelf can be restored independently
+   by setting its variable to `block` in a local override. */
+:root {
+  --ambient-home-top-mixes: none;
+  --ambient-home-made-for-you: none;
+  --ambient-home-more-like: none;
+  --ambient-home-recent-recommendations: none;
+}
+
+section[data-testid="component-shelf"][aria-label="Your top mixes"] {
+  display: var(--ambient-home-top-mixes) !important;
+}
+
+section[data-testid="component-shelf"][aria-label="Made for you"] {
+  display: var(--ambient-home-made-for-you) !important;
+}
+
+section[data-testid="component-shelf"][aria-label^="More like "] {
+  display: var(--ambient-home-more-like) !important;
+}
+
+section[data-testid="component-shelf"][aria-label="Based on your recent listening"] {
+  display: var(--ambient-home-recent-recommendations) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .Root__main-view,
   .Root__nav-bar,

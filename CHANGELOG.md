@@ -26,3 +26,6 @@
 - Added native Luma Lyrics styling scoped to its fullscreen overlay, settings, player controls, and artwork-derived accent.
 - Rewrote installation, compatibility, troubleshooting, and manual test documentation.
 - Corrected Marketplace metadata format and removed the unsupported MIT license claim.
+## Unreleased
+
+- Used Spotify's accessible Home shelf labels to hide selected recommendation shelves independently while preserving shortcut playlists, followed shows, and Recents. Documented per-shelf CSS overrides.
