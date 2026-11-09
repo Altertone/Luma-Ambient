@@ -1,0 +1,45 @@
+/* LUMA AMBIENT LIQUIFY ADD-ON
+ * Append to Liquify's local user.css; do not activate Luma Ambient as a second theme.
+ * Intentionally does not target .lyrics-*, .liquify-*, Liquid Lyrics, or settings UI.
+ */
+:root {
+  --luma-addon-border: color-mix(in srgb, var(--text-base, #fff) 10%, transparent);
+  --luma-addon-radius: 14px;
+}
+
+.Root__nav-bar {
+  border-inline-end: 1px solid var(--luma-addon-border);
+}
+
+.main-nowPlayingBar-nowPlayingBar {
+  border-top: 1px solid var(--luma-addon-border);
+  box-shadow: 0 -8px 28px rgb(0 0 0 / 9%);
+}
+
+.main-globalNav-searchInputContainer .main-topBar-searchBar {
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.main-card-card,
+.main-heroCard-card {
+  border-radius: var(--luma-addon-radius);
+  box-shadow: none;
+}
+
+.main-trackList-trackListRow {
+  border-radius: 8px;
+}
+
+:where(button, a, input, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--spice-button, #d0bcff);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-card-card,
+  .main-heroCard-card,
+  .main-trackList-trackListRow {
+    transition: none !important;
+  }
+}
