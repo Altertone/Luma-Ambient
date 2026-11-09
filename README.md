@@ -1,18 +1,21 @@
 # Luma Ambient
 
-A quieter Spotify desktop interface for Spicetify. Luma Ambient keeps the existing muted-violet identity while giving the player, navigation, library, and content surfaces a more consistent hierarchy.
+A focused Spotify desktop interface for Spicetify, built around Material 3 surfaces, Material Symbols transport icons, and an artwork-reactive color system when paired with Luma Lyrics.
 
 Luma Ambient is a standalone Spicetify theme with built-in, automatically applied CSS styling for the separate Luma Lyrics extension.
 
 ## Features
 
-- Two coordinated schemes: **Ambient** and **Ambient Soft**.
+- Two coordinated fallback schemes: **Ambient** and **Ambient Soft**.
+- Artwork-reactive Material 3 colors shared from Luma Lyrics when its **Desktop colors** setting is enabled.
+- Material Symbols Rounded icons for labelled playback controls.
+- A minimal Now Playing sidebar that keeps the player and lyrics preview while hiding Credits, On tour, Merch, and Next in queue.
 - Consistent surface, text, border, spacing, and radius tokens.
 - Calmer navigation, cards, track rows, search, and now-playing bar.
 - Essential navigation, search, playback, focus indicators, and selected states remain visible.
 - Reduced-motion support and no unnecessary animated effects.
 - Optional compact-spacing rules in `declutter.css`.
-- Native Luma Lyrics styling scoped to its fullscreen overlay, player controls, settings, and artwork-derived accent.
+- Native Luma Lyrics styling scoped to its fullscreen overlay, player controls, settings, and artwork-derived Material 3 palette.
 
 ## Preview
 
@@ -45,6 +48,10 @@ This is an illustrative theme preview, not a screenshot of Spotify. Real Spotify
 
 The scheme names correspond to the sections in `color.ini`.
 
+## Minimal Now Playing sidebar
+
+The theme keeps the current track/player area and Spotify's lyrics preview while hiding Credits, On tour, Merch, and Next in queue. The selectors use Spotify's structural attributes and link destinations rather than translated heading text or short-lived generated class names. Spotify can still change its markup in a future update, so verify this panel after major client updates.
+
 ## Optional decluttering
 
 The core theme already reduces visual noise without hiding controls. For a slightly tighter Home layout, append the contents of `declutter.css` to the end of your theme's `user.css`, then run `spicetify apply`.
@@ -58,7 +65,8 @@ Luma Ambient includes a dedicated styling layer for your [Luma Lyrics](https://g
 ### What the integration changes
 
 - Styles the Luma Lyrics toolbar, player controls, settings panel, form controls, and lyric typography.
-- Uses Luma Lyrics' artwork-derived `--accent` and `--accent-rgb` variables for the active word, playback button, focus ring, and small accents. The highlight can therefore adapt to the current album artwork.
+- Uses Luma Lyrics' artwork-derived Material 3 `--luma-*` tokens for the Spotify shell, player, selection states, and accents. The palette updates as the artwork changes.
+- To enable the shared desktop palette, open Luma Lyrics settings and turn on **Desktop colors**. Luma Ambient then consumes the variables published by Luma Lyrics; its fallback palette remains active otherwise.
 - Keeps the extension's own artwork backdrop, lyric timing, word-by-word highlighting, scroll behavior, translations, romanization, and player logic intact.
 - Does not require enabling Luma Lyrics' optional **Desktop colors** setting. That setting remains optional and is controlled by Luma Lyrics itself.
 - Is scoped to `#luma-root`; it does not globally restyle other extensions or change their lyric interfaces.
@@ -93,7 +101,8 @@ The following checks are required before calling a release fully verified. They 
 | Playlists | Check headers, rows, selected/hover states | Check playlist content and controls remain unaffected |
 | Library | Check navigation, filters, saved items | Check sidebar and library interactions remain unaffected |
 | Playback | Check play/pause, seek, volume, queue, device controls | Check extension transport and Spotify player controls |
-| Lyrics | Not a built-in Luma feature | Check overlay, word/line/gentle/static modes, translation, romanization, artwork accent, and settings |
+| Lyrics | Not a built-in Luma feature | Check overlay, word/line/gentle/static modes, translation, romanization, artwork-reactive Material 3 desktop colors, and settings |
+| Now Playing sidebar | Check player and lyrics preview remain; Credits, On tour, Merch, and queue are hidden | Check the same minimal sidebar and confirm artwork palette updates |
 | Accessibility | Keyboard focus, contrast, reduced motion | Check overlay focus, contrast, reduced motion, and keyboard operation |
 
 Also verify Spotify's current client version and Spicetify version after every major Spotify UI update. Spotify's generated class names can change.
@@ -115,7 +124,7 @@ Also verify Spotify's current client version and Spicetify version after every m
 
 ## Version
 
-Current development version: **1.0.0**.
+Current development version: **1.1.0**.
 
 See [CHANGELOG.md](CHANGELOG.md) for changes.
 
