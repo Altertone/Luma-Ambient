@@ -221,9 +221,9 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     }
   }
 
-  function declutter(el, value) {
+  function declutter(el, value, collapse = true) {
     if (!tag(el, value)) return;
-    collapseEmptyParents(el, value);
+    if (collapse) collapseEmptyParents(el, value);
     console.info(`[Luma Ambient] decluttered: ${el.textContent.slice(0, 60).trim()}…`);
   }
 
@@ -276,8 +276,8 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     scope.querySelectorAll("h1,h2,h3,h4,[role='heading']").forEach((heading) => {
       const text = heading.textContent.trim();
       if (!NPV_LABELS.includes(text)) return;
-      if (tagSection(heading, scope)) return;
-      tagByShape(heading, scope);
+      if (tagSection(heading, scope, "npv")) return;
+      tagByShape(heading, scope, "npv");
     });
   }
 
@@ -424,8 +424,10 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     ).length;
 
   // Preferred path: tag the dedicated section element (client-provided
-  // section/article or a *-npv-section testid).
-  function tagSection(heading, scope) {
+  // section/article or a *-npv-section testid). value selects which restore
+  // variable the tagged block follows ("npv" or "artist-page").
+  function tagSection(heading, scope, value) {
+    value = value || "npv";
     let el = heading;
     for (let depth = 0; depth < 10 && el.parentElement; depth++) {
       el = el.parentElement;
@@ -445,7 +447,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       // headings do not count — e.g. an On tour section lists venue names.
       if (el.querySelector(NPV_SAFE) || clutterHeadings(el) > 1) return false;
 
-      declutter(el, "npv");
+      declutter(el, value);
       return true;
     }
     return false;
@@ -457,7 +459,8 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   // heading, and nothing protected. The heading's own container (title plus
   // expand chevron) has the heading's exact text, so climbing stops at the
   // first ancestor whose text reaches beyond it — the section boundary.
-  function tagByShape(heading, scope) {
+  function tagByShape(heading, scope, value) {
+    value = value || "npv";
     const text = heading.textContent.replace(/\s+/g, " ").trim();
     let el = heading;
     for (let depth = 0; depth < 12 && el.parentElement; depth++) {
@@ -466,10 +469,111 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       if (el.textContent.replace(/\s+/g, " ").trim() === text) continue;
       if (clutterHeadings(el) > 1) return false;
       if (el.querySelector(NPV_SAFE)) return false;
-      declutter(el, "npv");
+      declutter(el, value);
       return true;
     }
     return false;
+  }
+
+  /* --------------------------------------------------------------------------
+     Artist page (the /artist/ view)
+     Merch, On tour, and About are removed — but the singer's world rank
+     ("#2 in the world") lives inside About on client 1.3.8, so it is copied
+     up into the page header as a badge first, then the sections are tagged.
+     Same text-based matching as the Now Playing panel, with two extra
+     guards: headings that render nowhere (Spotify keeps hidden NPV
+     templates in the main view markup) are skipped, and a lost world rank
+     is never invented — no About text means no badge.
+     -------------------------------------------------------------------------- */
+  const ARTIST_PAGE_HIDE = ["About", "About the artist", "On tour", "Merch"];
+  const ARTIST_PAGE_SCOPE = ".Root__main-view, .main-view-container";
+  const WORLD_RANK_RE = /#\s*([\d.,]+)\s*in the world/i;
+
+  function injectWorldRank(scope) {
+    const header = scope.querySelector(".main-entityHeader-headerText");
+    let badge = document.querySelector("[data-luma-world-rank]");
+    let rank = null;
+    for (const el of scope.querySelectorAll("div, span, p")) {
+      const match = (el.textContent || "").match(WORLD_RANK_RE);
+      if (match) {
+        rank = match[1];
+        break;
+      }
+    }
+    if (header) {
+      if (!badge) {
+        if (!rank) return;
+        badge = document.createElement("span");
+        badge.className = "luma-artist-rank";
+        badge.setAttribute("data-luma-world-rank", "");
+        header.append(badge);
+      }
+      badge.textContent = rank ? `#${rank} in the world` : "";
+      badge.hidden = !rank;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+
+  // Artist-page sections (About, Merch, On tour) are siblings inside grid
+  // containers, with no dedicated <section> wrappers and no text of their own
+  // beyond the heading — so the Now Playing "shape" heuristics would climb
+  // straight into the grid and then up single-child wrappers to the scroll
+  // root, hiding the whole page. Tag the heading's ancestor that is a direct
+  // child of a grid container (each section owns one grid child), and never
+  // collapse empty parents here (grids always hold other sections).
+  const ARTIST_GRID = ".main-gridContainer-gridContainer";
+
+  function tagArtistSection(heading) {
+    let el = heading;
+    while (el.parentElement) {
+      const parent = el.parentElement;
+      if (parent.matches(ARTIST_GRID)) {
+        if (el === heading) return false;
+        declutter(el, "artist-page", false);
+        return true;
+      }
+      el = parent;
+    }
+    return false;
+  }
+
+  function declutterArtistPage() {
+    let scope = null;
+    for (const sel of ARTIST_PAGE_SCOPE.split(",")) {
+      const el = document.querySelector(sel.trim());
+      if (el) {
+        scope = el;
+        break;
+      }
+    }
+    if (!scope) return;
+    const path =
+      globalThis.Spicetify?.Platform?.History?.location?.pathname ||
+      location.pathname;
+    if (!path.startsWith("/artist/")) {
+      const badge = document.querySelector("[data-luma-world-rank]");
+      if (badge) badge.remove();
+      return;
+    }
+    // The world rank must be read before About disappears underneath it.
+    injectWorldRank(scope);
+    // Drop tags an earlier build may have left on wrappers above a grid
+    // (they hid the whole page); a real section's parent is a grid itself.
+    for (const el of scope.querySelectorAll('[data-luma-declutter="artist-page"]')) {
+      if (!el.parentElement?.matches(ARTIST_GRID)) {
+        el.removeAttribute("data-luma-declutter");
+      }
+    }
+    scope
+      .querySelectorAll("h1, h2, h3, h4, [role='heading']")
+      .forEach((heading) => {
+        const rect = heading.getBoundingClientRect();
+        if (!rect.width && !rect.height) return; // hidden template
+        const text = heading.textContent.trim();
+        if (!ARTIST_PAGE_HIDE.includes(text)) return;
+        tagArtistSection(heading);
+      });
   }
 
   function answer(lyricsInstalled, close) {
@@ -533,6 +637,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       scanQueued = false;
       declutterShelves();
       declutterNowPlaying();
+      declutterArtistPage();
       organizeLibrary();
       reviveCollapsed();
       const lyrics = detectLyrics();
@@ -589,10 +694,29 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   setTimeout(() => {
     declutterShelves();
     declutterNowPlaying();
+    declutterArtistPage();
     organizeLibrary();
     // Warm the gallery's artist count so the sidebar pill can show it.
     artistGallery.warmCount();
   }, 1200);
+
+  // The sidebar's lyrics preview plays the full Luma Lyrics view instead of
+  // Spotify's own lyrics screen (only when Luma Lyrics is actually wired
+  // up; otherwise Spotify's default click is left alone).
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (state.lyrics !== true) return;
+      const lyrics = globalThis.LumaLyrics;
+      if (!lyrics || typeof lyrics.open !== "function") return;
+      const preview = event.target.closest?.("[data-testid='lyrics-npv-section']");
+      if (!preview) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      lyrics.open();
+    },
+    true,
+  );
 
   globalThis.LumaAmbient = {
     version: __LUMA_AMBIENT_VERSION__,

@@ -900,7 +900,8 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
    Artist gallery — the full-screen overlay page (#luma-artists)
    The theme script builds the dialog, card grid, filter input, and close
    button; this decides how they look (M3 tokens from the palette). Artists
-   show as circular avatar cards; clicking one opens their page.
+   show as circular avatar cards grouped under letter headers; clicking a
+   card opens their page, the hover button plays their top tracks.
    -------------------------------------------------------------------------- */
 #luma-artists {
   position: fixed;
@@ -918,52 +919,62 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
 #luma-artists .luma-artists-scrim {
   position: absolute;
   inset: 0;
-  background: rgb(9 8 13 / 0.6);
-  backdrop-filter: blur(10px) saturate(1.1);
-  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  background: rgb(9 8 13 / 0.72);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
 }
 
 #luma-artists .luma-artists-panel {
   position: relative;
-  width: min(1180px, 94vw);
-  height: min(86vh, 900px);
+  width: min(1180px, 90vw);
+  height: min(86vh, 880px);
   display: flex;
   flex-direction: column;
   background: var(--md-surface-container);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 24px;
+  border-radius: 28px;
   box-shadow: var(--md-elevation-3);
   color: var(--md-on-surface);
   overflow: hidden;
 }
 
+/* Header: proper type hierarchy instead of a loose label row. */
 #luma-artists .luma-artists-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 22px 14px;
+  gap: 16px;
+  padding: 22px 26px 18px;
   border-bottom: 1px solid var(--md-outline-variant);
+}
+
+#luma-artists .luma-artists-titles {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
 }
 
 #luma-artists h2 {
   margin: 0;
-  font-size: 20px;
-  font-weight: 640;
-  letter-spacing: -0.02em;
+  font-size: 24px;
+  font-weight: 680;
+  letter-spacing: -0.03em;
 }
 
 #luma-artists .luma-artists-count {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--md-on-surface-variant);
-  margin-left: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--md-primary) 16%, transparent);
+  color: var(--md-primary);
+  font-size: 12px;
+  font-weight: 620;
 }
 
 #luma-artists .luma-artists-filter {
   flex: 1;
-  max-width: 340px;
+  max-width: 360px;
   margin-left: auto;
-  padding: 8px 16px;
+  padding: 9px 18px;
   border: 1px solid var(--md-outline-variant);
   border-radius: 999px;
   background: var(--md-surface-container-high);
@@ -977,8 +988,8 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
 
 #luma-artists .luma-artists-close {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border: 1px solid var(--md-outline-variant);
   border-radius: 999px;
   background: transparent;
@@ -1000,17 +1011,53 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
   overscroll-behavior: contain;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-  gap: 16px 10px;
-  padding: 20px 22px 28px;
+  gap: 14px 12px;
+  padding: 20px 26px 34px;
   align-content: start;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--md-on-surface) 28%, transparent) transparent;
+}
+
+/* Chrome's native scrollbar replaced by a quiet translucent one. */
+#luma-artists .luma-artists-grid::-webkit-scrollbar {
+  width: 10px;
+}
+
+#luma-artists .luma-artists-grid::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--md-on-surface) 24%, transparent);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+#luma-artists .luma-artists-grid::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 40%, transparent);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+#luma-artists .luma-artists-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Letter section headers span the full grid row. */
+#luma-artists .luma-artists-letter {
+  grid-column: 1 / -1;
+  padding: 18px 2px 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--md-outline-variant) 55%, transparent);
+  color: var(--md-primary);
+  font-size: 15px;
+  font-weight: 680;
+  letter-spacing: 0.06em;
 }
 
 #luma-artists .luma-artists-card {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: start;
   gap: 10px;
-  padding: 8px 6px;
+  padding: 8px 6px 10px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -1051,23 +1098,60 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
   );
 }
 
+/* Play button surfaced on hover (Spotify-style affordance). */
+#luma-artists .luma-artists-play {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.45);
+  transition: opacity 150ms ease, transform 150ms ease, filter 150ms ease;
+}
+
+#luma-artists .luma-artists-play svg {
+  margin-left: 2px;
+}
+
+#luma-artists .luma-artists-play:hover {
+  filter: brightness(1.08);
+  transform: translateY(0) scale(1.06);
+}
+
+#luma-artists .luma-artists-card:hover .luma-artists-play,
+#luma-artists .luma-artists-card:focus-within .luma-artists-play {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 #luma-artists .luma-artists-card:hover .luma-artists-picture,
 #luma-artists .luma-artists-card:focus-visible .luma-artists-picture {
   transform: translateY(-3px) scale(1.03);
   box-shadow: 0 10px 30px color-mix(in srgb, var(--md-primary) 25%, rgb(0 0 0 / 0.4));
 }
 
+/* Two reserved name lines keep every row aligned. */
 #luma-artists .luma-artists-name {
   max-width: 112px;
-  font-size: 13px;
+  min-height: 36px;
+  font-size: 14px;
   font-weight: 560;
-  line-height: 1.25;
+  line-height: 1.28;
   text-align: center;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  color: var(--md-on-surface-variant);
+  color: color-mix(in srgb, var(--md-on-surface) 92%, transparent);
   transition: color 140ms ease;
 }
 
@@ -1081,9 +1165,59 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
 }
 
 #luma-artists .luma-artists-status {
-  padding: 28px 22px;
+  padding: 32px 26px;
   color: var(--md-on-surface-variant);
   font-size: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   Artist page — decluttering and the world-rank badge
+   The theme script tags Merch / On tour / About blocks with
+   data-luma-declutter="artist-page" (restorable like the other groups) and
+   copies the "#N in the world" rank out of About into the artist header as
+   .luma-artist-rank before hiding it.
+   -------------------------------------------------------------------------- */
+[data-luma-declutter="artist-page"] {
+  display: var(--luma-declutter-artist, none) !important;
+}
+
+.luma-artist-rank {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 2px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--md-primary) 16%, transparent);
+  color: var(--md-primary);
+  font-size: 12px;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar lyrics preview, styled like Luma Lyrics
+   client 1.3.8 exposes lyrics colors as CSS variables on the preview
+   container, so restyling it needs no class names. Clicking it opens the
+   full Luma Lyrics view (handled by the theme script).
+   -------------------------------------------------------------------------- */
+[data-testid="lyrics-npv-section"] {
+  --lyrics-color-active: var(--md-primary) !important;
+  --lyrics-color-inactive: color-mix(
+    in srgb,
+    var(--md-on-surface) 30%,
+    transparent
+  ) !important;
+  --lyrics-color-passed: color-mix(
+    in srgb,
+    var(--md-on-surface) 12%,
+    transparent
+  ) !important;
+}
+
+[data-testid="lyrics-npv-section"] [data-encore-id="text"] {
+  font-weight: 640 !important;
+  letter-spacing: -0.02em;
+  cursor: pointer;
 }
 
 /* --------------------------------------------------------------------------
@@ -1271,7 +1405,8 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
   }
   #luma-artists .luma-artists-picture,
   #luma-artists .luma-artists-name,
-  #luma-artists .luma-artists-close {
+  #luma-artists .luma-artists-close,
+  #luma-artists .luma-artists-play {
     transition: none;
   }
 }

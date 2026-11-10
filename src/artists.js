@@ -1,18 +1,30 @@
 /* Luma Ambient — artist gallery.
  *
  * A full-screen overlay "page" that shows every artist in the library as a
- * card grid (avatar + name), with an inline filter. Cards navigate to the
- * artist page; Esc, ✕, or the scrim close it.
+ * card grid (avatar + name), grouped under letter headers ("A", "B", … "#"),
+ * with an inline filter. Clicking a card opens the artist's page; the play
+ * button on hover starts their top tracks. Esc, ✕, or the scrim close it.
  *
  * Data comes from Spicetify's own LibraryAPI (filter id "1" is Artists, as
  * reported by availableFilters) and is paginated, so the gallery shows the
  * whole library — unlike the sidebar grid, which only renders a scrolled
- * window of rows. Sums are cached for ~5 minutes.
+ * window of rows. Results are cached for ~5 minutes.
  *
  * The sidebar's "Artists" pill opens this gallery instead of toggling rows.
  * Console: LumaAmbient.artists() — reopen it manually.
  */
 const CACHE_MS = 5 * 60 * 1000;
+
+const PLAY_ICON =
+  '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4.5 2.5v11l9-5.5-9-5.5z"/></svg>';
+const CLOSE_ICON =
+  '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M1.47 1.47a.75.75 0 0 1 1.06 0L8 6.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L9.06 8l5.47 5.47a.75.75 0 1 1-1.06 1.06L8 9.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L6.94 8 1.47 2.53a.75.75 0 0 1 0-1.06z"/></svg>';
+
+// Letter headers group the grid; anything outside A–Z falls under "#".
+const alphabetHeader = (name) => {
+  const first = (name.trim()[0] || "#").toUpperCase();
+  return /[A-Z]/.test(first) ? first : "#";
+};
 
 export function createArtistGallery(onCountChanged = () => {}) {
   const data = { items: null, fetchedAt: 0, promise: null, count: null };
@@ -85,8 +97,6 @@ export function createArtistGallery(onCountChanged = () => {}) {
         data.items = items;
         data.count = items.length;
         data.fetchedAt = Date.now();
-        // Library may gain or lose artists longer than the cache; refresh it
-        // silently so the next open is cheap but still accurate.
         setTimeout(() => {
           data.promise = null;
         }, CACHE_MS);
@@ -120,12 +130,15 @@ export function createArtistGallery(onCountChanged = () => {}) {
     const header = document.createElement("header");
     header.className = "luma-artists-header";
 
+    const titleBlock = document.createElement("div");
+    titleBlock.className = "luma-artists-titles";
     const title = document.createElement("h2");
     title.textContent = "Artists";
     countEl = document.createElement("span");
     countEl.className = "luma-artists-count";
-    title.append(countEl);
-    header.append(title);
+    countEl.textContent = "";
+    titleBlock.append(title, countEl);
+    header.append(titleBlock);
 
     searchEl = document.createElement("input");
     searchEl.type = "search";
@@ -139,8 +152,7 @@ export function createArtistGallery(onCountChanged = () => {}) {
     closeBtn.type = "button";
     closeBtn.className = "luma-artists-close";
     closeBtn.setAttribute("aria-label", "Close artists");
-    closeBtn.innerHTML =
-      '<svg viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M1.47 1.47a.75.75 0 0 1 1.06 0L8 6.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L9.06 8l5.47 5.47a.75.75 0 1 1-1.06 1.06L8 9.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L6.94 8 1.47 2.53a.75.75 0 0 1 0-1.06z"/></svg>';
+    closeBtn.innerHTML = CLOSE_ICON;
     closeBtn.addEventListener("click", () => close());
     header.append(closeBtn);
 
@@ -163,12 +175,20 @@ export function createArtistGallery(onCountChanged = () => {}) {
     });
   }
 
+  function playArtist(artist) {
+    const player = globalThis.Spicetify?.Player;
+    if (player?.playUri) {
+      player.playUri(`spotify:artist:${artist.id}`);
+    }
+  }
+
   function cardFor(artist) {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "luma-artists-card";
     card.setAttribute("role", "listitem");
     card.dataset.name = artist.name.toLowerCase();
+    card.dataset.letter = alphabetHeader(artist.name);
     const picture = document.createElement("span");
     picture.className = "luma-artists-picture";
     if (artist.image) {
@@ -184,6 +204,27 @@ export function createArtistGallery(onCountChanged = () => {}) {
       initial.textContent = (artist.name[0] || "?").toUpperCase();
       picture.append(initial);
     }
+    // Hover play: starts the artist's top tracks without leaving the page.
+    // A span, not a button — nested <button> elements are invalid HTML.
+    const play = document.createElement("span");
+    play.className = "luma-artists-play";
+    play.title = "Play";
+    play.setAttribute("role", "button");
+    play.tabIndex = 0;
+    play.setAttribute("aria-label", `Play ${artist.name}`);
+    play.innerHTML = PLAY_ICON;
+    play.addEventListener("click", (event) => {
+      event.stopPropagation();
+      playArtist(artist);
+    });
+    play.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        event.stopPropagation();
+        playArtist(artist);
+      }
+    });
+    picture.append(play);
     const name = document.createElement("span");
     name.className = "luma-artists-name";
     name.textContent = artist.name;
@@ -198,20 +239,44 @@ export function createArtistGallery(onCountChanged = () => {}) {
 
   function render(artists) {
     countEl.textContent = artists.length ? String(artists.length) : "";
-    gridEl.replaceChildren(...artists.map(cardFor));
+    // Letter sections: header row spanning the grid, then its cards.
+    const groups = new Map();
+    for (const artist of artists) {
+      const letter = alphabetHeader(artist.name);
+      let bucket = groups.get(letter);
+      if (!bucket) {
+        bucket = [];
+        groups.set(letter, bucket);
+      }
+      bucket.push(artist);
+    }
+    const nodes = [];
+    for (const [letter, bucket] of groups) {
+      const heading = document.createElement("span");
+      heading.className = "luma-artists-letter";
+      heading.setAttribute("role", "presentation");
+      heading.textContent = letter;
+      heading.dataset.letter = letter;
+      nodes.push(heading);
+      for (const artist of bucket) nodes.push(cardFor(artist));
+    }
+    gridEl.replaceChildren(...nodes);
     statusEl.hidden = artists.length > 0;
     statusEl.textContent = "No artists match this filter.";
   }
 
   function applyFilter() {
     const query = (searchEl.value || "").trim().toLowerCase();
-    let shown = 0;
-    for (const card of gridEl.children) {
+    const shown = new Set();
+    for (const card of gridEl.querySelectorAll(".luma-artists-card")) {
       const match = !query || card.dataset.name.includes(query);
       card.hidden = !match;
-      if (match) shown++;
+      if (match) shown.add(card.dataset.letter);
     }
-    statusEl.hidden = shown > 0;
+    for (const letter of gridEl.querySelectorAll(".luma-artists-letter")) {
+      letter.hidden = !shown.has(letter.dataset.letter);
+    }
+    statusEl.hidden = shown.size > 0;
     statusEl.textContent = query
       ? "No artists match this filter."
       : "No artists in the library yet — follow some artists first.";

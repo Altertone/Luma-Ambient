@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.6 — 2026-11-10
+
+- **Artist page decluttered.** Merch, On tour and About are removed from the artist screen (restorable with `--luma-declutter-artist: block`). The world rank ("#2 in the world") lives inside About on client 1.3.8, so the theme copies it into the page header as a badge before hiding the section — the monthly-listeners count already sits there.
+- **Artist gallery polish.** Redesigned header (bigger title, count as a chip), brighter 14px artist names with a fixed two-line height so rows align, letter section headers (A, B, … #), a quiet translucent scrollbar, a deeper scrim, and a narrower panel. Play button on hover starts the artist's top tracks without leaving the page (keyboard-accessible); the card itself still opens the artist.
+- **Sidebar lyrics preview adopts Luma Lyrics.** Its colors come from the palette (`--lyrics-color-active/inactive/passed`), text is set to Luma's typographic weight, and clicking it now opens the full Luma Lyrics view instead of Spotify's lyrics screen (only when Luma Lyrics is installed; otherwise Spotify's own preview click is untouched).
+
 ## 1.4.5 — 2026-11-10
 
 - **Artist gallery page.** The library bar's Artists pill opens a full-screen overlay page showing every artist in the library as a circular card grid — the whole library, not just the rows the sidebar happens to render (it reads Spotify's LibraryAPI with the Artists filter and paginates). A filter box narrows the grid as you type; clicking a card opens that artist's page; Esc, ✕ or the scrim close it; the count updates on the pill after the first fetch. Console: `LumaAmbient.artists()`. Restorable styling is plain M3 tokens; rows in the sidebar are never moved.
