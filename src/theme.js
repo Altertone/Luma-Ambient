@@ -92,12 +92,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       document.head.append(styleEl);
     }
     styleEl.textContent = state.lyrics === true ? HIDE_RULES : "";
-    if (state.plus) applyPlus();
   }
-
-  // Reserved for future Luma Plus-specific adjustments. Detection and the
-  // saved flag are already wired; add rules here as they are needed.
-  function applyPlus() {}
 
   /* --------------------------------------------------------------------------
      Decluttering (text-based, markup-tolerant)

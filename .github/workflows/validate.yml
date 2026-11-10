@@ -1,0 +1,39 @@
+name: Validate
+
+on:
+  push:
+    branches: [main, "maintenance/**"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: luma-ambient-built-theme
+          path: theme.js
+          if-no-files-found: error
+      - run: npm test
+      - name: Commit rebuilt theme bundle on maintenance branch
+        if: startsWith(github.ref, 'refs/heads/maintenance/')
+        run: |
+          if ! git diff --quiet -- theme.js; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add theme.js
+            git commit -m "build: sync generated theme bundle"
+            git push
+          fi
+      - run: git diff --exit-code -- theme.js
