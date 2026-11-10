@@ -201,7 +201,7 @@ This is a CSS integration with the current Luma Lyrics v2 DOM structure, not a f
 
 ## Manual test matrix
 
-The following checks are required before calling a release fully verified. They have **not** been run in a live Spotify client in this repository-editing environment.
+The following checks are required before calling a release fully verified. Record the Spotify and Spicetify versions and CDP screenshot evidence when completing a live verification pass.
 
 | Area | Standalone: both schemes | Luma Ambient + Luma Lyrics |
 |---|---|---|
@@ -251,7 +251,7 @@ Commit `src/` and the rebuilt `theme.js` together.
 
 ## Version
 
-Current development version: **1.4.0**.
+Current development version: **1.5.0**.
 
 See [CHANGELOG.md](CHANGELOG.md) for changes.
 
