@@ -74,7 +74,7 @@ spicetify apply
 
 ## First-run setup
 
-The theme script `theme.js` (injected automatically with `inject_theme_js 1`, the same mechanism the Comfy theme uses) asks once on the first launch whether the [Luma Lyrics](https://github.com/Shahisha1/Luma-Lyrics) extension is installed, and adapts the interface to your answer — for example, hiding Spotify's native lyrics button while Luma Lyrics is active so the playbar keeps a single lyrics toggle instead of two.
+The theme script `theme.js` (injected automatically with `inject_theme_js 1`, the same mechanism the Comfy theme uses) asks once on the first launch whether the [Luma Lyrics](https://github.com/Altertone/Luma-Lyrics) extension is installed, and adapts the interface to your answer — for example, hiding Spotify's native lyrics button while Luma Lyrics is active so the playbar keeps a single lyrics toggle instead of two.
 
 Luma Lyrics and Luma Plus are detected automatically afterwards, so the setup stays correct if you install or remove them later without prompting again. The prompt only appears once; your answer is stored in `localStorage`.
 
@@ -169,7 +169,7 @@ To undo it, remove the block between the `LUMA DECLUTTER START` and `LUMA DECLUT
 
 ## Luma Lyrics compatibility
 
-Luma Ambient includes a dedicated styling layer for your [Luma Lyrics](https://github.com/Shahisha1/Luma-Lyrics) Spicetify extension. When Luma Ambient is active, the extension's fullscreen lyrics view and settings panel automatically pick up the theme's restrained surfaces and typography.
+Luma Ambient includes a dedicated styling layer for your [Luma Lyrics](https://github.com/Altertone/Luma-Lyrics) Spicetify extension. When Luma Ambient is active, the extension's fullscreen lyrics view and settings panel automatically pick up the theme's restrained surfaces and typography.
 
 ### What the integration changes
 
