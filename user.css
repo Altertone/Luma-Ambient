@@ -139,7 +139,8 @@ body,
   color: var(--md-on-surface);
 }
 
-.Root__right-sidebar {
+.Root__right-sidebar,
+[class*="Root__right-sidebar"] {
   background: var(--md-surface-container-low);
   color: var(--md-on-surface);
 }
@@ -534,8 +535,10 @@ input:checked ~ .x-toggle-indicatorWrapper .x-toggle-indicator {
    Home shelves block below). */
 :root [data-npv-root] a[href^="/concert/"],
 :root .NowPlayingView a[href^="/concert/"],
+:root [class*="Root__right-sidebar"] a[href^="/concert/"],
 :root [data-npv-root] a[href*="shop.spotify.com"],
-:root .NowPlayingView a[href*="shop.spotify.com"] {
+:root .NowPlayingView a[href*="shop.spotify.com"],
+:root [class*="Root__right-sidebar"] a[href*="shop.spotify.com"] {
   display: var(--ambient-sidebar-hidden, var(--luma-declutter-npv, none)) !important;
 }
 
@@ -742,7 +745,9 @@ input:checked ~ .x-toggle-indicatorWrapper .x-toggle-indicator {
    hidden when neither is set. Set a variable to `block` in your own CSS to
    show that section again; remove it to hide the section.
 
-   Shelves with a stable accessible label are hidden here directly. theme.js
+   Shelves with a stable accessible label are hidden here directly. Personal
+   shelves embed a name ("More like  The Weeknd", "Made For  Sasha"), so they
+   are matched by prefix. theme.js
    additionally tags sections it finds by heading text (data-luma-declutter),
    including the empty wrappers they leave behind, so the same variables
    control the CSS and the script paths.
@@ -751,7 +756,14 @@ section[data-testid="component-shelf"][aria-label="Your top mixes"] {
   display: var(--ambient-home-top-mixes, var(--luma-declutter-shelves, none)) !important;
 }
 
-section[data-testid="component-shelf"][aria-label="Made for you"] {
+section[data-testid="component-shelf"][aria-label="Recommended Stations"],
+section[data-testid="component-shelf"][aria-label$="Recommended Stations"] {
+  display: var(--ambient-home-recommended-stations, var(--luma-declutter-shelves, none)) !important;
+}
+
+section[data-testid="component-shelf"][aria-label^="Made For "],
+section[data-testid="component-shelf"][aria-label^="Made for "],
+[data-luma-declutter="shelf:made-for-you"] {
   display: var(--ambient-home-made-for-you, var(--luma-declutter-shelves, none)) !important;
 }
 
@@ -760,6 +772,7 @@ section[data-testid="component-shelf"][aria-label^="More like "],
   display: var(--ambient-home-more-like, var(--luma-declutter-shelves, none)) !important;
 }
 
+section[data-testid="component-shelf"][aria-label^="Fans also like "],
 [data-luma-declutter="shelf:fans-also-like"] {
   display: var(--ambient-home-fans-also-like, var(--luma-declutter-shelves, none)) !important;
 }
@@ -767,6 +780,16 @@ section[data-testid="component-shelf"][aria-label^="More like "],
 section[data-testid="component-shelf"][aria-label="Based on your recent listening"],
 [data-luma-declutter="shelf:recent-recommendations"] {
   display: var(--ambient-home-recent-recommendations, var(--luma-declutter-shelves, none)) !important;
+}
+
+section[data-testid="component-shelf"][aria-label="Albums featuring songs you like"],
+[data-luma-declutter="shelf:albums-for-you"] {
+  display: var(--ambient-home-albums-for-you, var(--luma-declutter-shelves, none)) !important;
+}
+
+section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
+[data-luma-declutter="shelf:popular-listeners"] {
+  display: var(--ambient-home-popular-listeners, var(--luma-declutter-shelves, none)) !important;
 }
 
 /* Now Playing sections (Credits, On tour, Merch, Next in queue). */

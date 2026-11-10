@@ -111,15 +111,27 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
      -------------------------------------------------------------------------- */
   const TAG = "data-luma-declutter";
   const NPV_LABELS = ["Credits", "On tour", "Merch", "Next in queue", "Next up"];
+  // Matched against the shelf's aria-label/heading, case-insensitively.
+  // Personalized shelves embed the artist or user name ("More like  The
+  // Weeknd", "Made For  Sasha"), so prefixes — not exact labels.
   const SHELF_PREFIXES = [
     ["More like", "more-like"],
     ["Fans also like", "fans-also-like"],
     ["Based on your recent listening", "recent-recommendations"],
+    ["Made for", "made-for-you"],
+    ["Made For", "made-for-you"],
+    ["Recommended Stations", "recommended-stations"],
+    ["Popular with listeners", "popular-listeners"],
+    ["Albums featuring songs you like", "albums-for-you"],
   ];
 
   const shelfKey = (text) => {
+    text = (text || "").trim();
+    if (!text) return null;
+    const lower = text.toLowerCase();
     for (const [prefix, key] of SHELF_PREFIXES) {
-      if (text === prefix || text.startsWith(`${prefix} `)) return key;
+      const p = prefix.toLowerCase();
+      if (lower === p || lower.startsWith(`${p} `)) return key;
     }
     return null;
   };
@@ -136,8 +148,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   // disappears entirely instead of leaving an empty gap. Never climbs into
   // layout roots, and stops as soon as a parent still has content. Wrappers
   // get the same tag as the section, so they follow the same override.
-  const LAYOUT_ROOTS =
-    ".Root__right-sidebar, .Root__main-view, .Root__nav-bar, .main-nowPlayingBar-nowPlayingBar, .main-home-content, .Root__top-container, body, html";
+  const LAYOUT_ROOTS = "[class*='Root__right-sidebar'], .Root__right-sidebar, .Root__main-view, .Root__nav-bar, .main-nowPlayingBar-nowPlayingBar, .main-home-content, .Root__top-container, body, html";
 
   function collapseEmptyParents(el, value) {
     let hiddenEl = el;
@@ -176,11 +187,26 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       });
   }
 
+  // Never hide a block containing the lyrics preview, cover art, or player
+  // controls. Kept as data-testid hooks first — client 1.3.8+ replaces the
+  // former main-nowPlayingView-* classes with obfuscated names.
+  const NPV_SAFE =
+    "[data-testid='lyrics-npv-section'], [data-testid='cover-art-slot'], [data-testid='cover-art'], [data-testid='NPV_Lyrics'], .main-nowPlayingView-lyricsContent, .main-nowPlayingView-playerControls, .main-nowPlayingView-header";
+
+  // The panel that hosts the Now Playing view. Client 1.3.8+ renders it as a
+  // "peek" panel (Root__right-sidebar-peek / -peekContent / -overlayWrapper)
+  // instead of .Root__right-sidebar, so match the family; legacy hooks remain.
+  const NPV_SCOPE = '[class*="Root__right-sidebar"], .NowPlayingView, [data-npv-root]';
+
   function declutterNowPlaying() {
-    const scope =
-      document.querySelector(".Root__right-sidebar") ||
-      document.querySelector(".NowPlayingView") ||
-      document.querySelector("[data-npv-root]");
+    let scope = null;
+    for (const sel of NPV_SCOPE.split(",")) {
+      const el = document.querySelector(sel.trim());
+      if (el) {
+        scope = el;
+        break;
+      }
+    }
     if (!scope) return;
 
     scope.querySelectorAll("h1,h2,h3,h4,[role='heading']").forEach((heading) => {
@@ -188,7 +214,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       if (!NPV_LABELS.includes(text)) return;
 
       let el = heading;
-      for (let depth = 0; depth < 8 && el.parentElement; depth++) {
+      for (let depth = 0; depth < 10 && el.parentElement; depth++) {
         el = el.parentElement;
         if (el === scope) break;
         const cls = typeof el.className === "string" ? el.className : "";
@@ -196,16 +222,20 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
         const isSection =
           el.tagName === "SECTION" ||
           el.tagName === "ARTICLE" ||
+          testid.endsWith("-npv-section") ||
           /nowPlayingView|npv/i.test(`${cls} ${testid}`);
         if (!isSection) continue;
 
-        // Safety: never hide the lyrics preview, player controls, or header.
+        // Safety: never hide anything with lyrics, cover art, or player
+        // controls inside, and never a wrapper that stacks several of the
+        // clutter sections (each section is tagged separately).
         if (
-          el.querySelector(
-            ".main-nowPlayingView-lyricsContent, .main-nowPlayingView-playerControls, .main-nowPlayingView-header, [data-testid='NPV_Lyrics']",
-          )
+          el.querySelector(NPV_SAFE) ||
+          el.querySelectorAll(
+            "h1,h2,h3,h4,[role='heading']",
+          ).length > 1
         )
-          continue;
+          return;
 
         declutter(el, "npv");
         return;
