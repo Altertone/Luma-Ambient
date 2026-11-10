@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.0 — 2026-11-10
+
+- Generalized artist-page section ownership to support `.main-gridContainer-gridContainer` and `.contentSpacing` owners, with traversal bounded by the main scroll view. Kept cleanup for stale legacy tags and protected content checks.
+- Added a small declarative declutter-rule registry with `testid`, `aria`, `text-prefix`, and `uri-pattern` matchers, page validation, visibility checks, protected-owner checks, idempotent tagging, and mutation-driven recovery.
+- Refined the Material 3 styling audit across Home, Search, entity pages, queue/track rows, Now Playing, and playback controls. Left the library sidebar's own container, rows, and navigation styling stock.
+- Preserved artwork-derived `--md-*` palette tokens, keyboard focus, quiet scrollbars, and reduced-motion behavior.
+- Rebuilt the injected theme bundle from `src/` and updated release documentation.
+
 ## 1.4.7 — 2026-11-10
 
 - **Sidebar pills removed.** The library category filter bar (and the Artists gallery launcher pill) is gone; the sidebar is back to stock. The artist gallery itself stays, now opened from the console (`LumaAmbient.artists()`).

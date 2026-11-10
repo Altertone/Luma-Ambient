@@ -354,6 +354,50 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   const ARTIST_PAGE_SCOPE = ".Root__main-view, .main-view-container";
   const WORLD_RANK_RE = /#\s*([\d.,]+)\s*in the world/i;
 
+  // Small declarative registry for text-based Spotify UI rules. Matchers are
+  // deliberately based on stable accessibility/content hooks; page checks and
+  // owner-specific safety checks run before any element receives a tag.
+  const DECLUTTER_RULES = [
+    {
+      value: "artist-page",
+      match: { type: "text-prefix", value: "Featuring " },
+      page: { type: "uri-pattern", value: /^\/artist\// },
+      owner: tagArtistSection,
+    },
+    {
+      value: "artist-page",
+      match: { type: "text-prefix", value: "Discovered on" },
+      page: { type: "uri-pattern", value: /^\/artist\// },
+      owner: tagArtistSection,
+    },
+  ];
+
+  function matchesDeclutterMatcher(element, matcher) {
+    if (matcher.type === "testid")
+      return element.getAttribute("data-testid") === matcher.value;
+    if (matcher.type === "aria")
+      return (element.getAttribute("aria-label") || "").trim() === matcher.value;
+    if (matcher.type === "text-prefix")
+      return element.textContent.trim().startsWith(matcher.value);
+    if (matcher.type === "uri-pattern")
+      return matcher.value.test(globalThis.Spicetify?.Platform?.History?.location?.pathname || location.pathname);
+    return false;
+  }
+
+  function runDeclutterRules(scope) {
+    const headings = scope.querySelectorAll("h1,h2,h3,h4,[role='heading']");
+    for (const rule of DECLUTTER_RULES) {
+      if (!matchesDeclutterMatcher(document.documentElement, rule.page)) continue;
+      for (const heading of headings) {
+        const rect = heading.getBoundingClientRect();
+        if (!rect.width && !rect.height) continue;
+        if (!matchesDeclutterMatcher(heading, rule.match)) continue;
+        if (heading.closest(`[${TAG}]`)?.getAttribute(TAG) === rule.value) continue;
+        rule.owner(heading);
+      }
+    }
+  }
+
   function injectWorldRank(scope) {
     const header = scope.querySelector(".main-entityHeader-headerText");
     let badge = document.querySelector("[data-luma-world-rank]");
@@ -399,16 +443,26 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   // child of a grid container (each section owns one grid child), and never
   // collapse empty parents here (grids always hold other sections).
   const ARTIST_GRID = ".main-gridContainer-gridContainer";
+  const ARTIST_SCROLL_BOUNDARY =
+    ".Root__main-view, .main-view-container__scroll-node-child, [data-overlayscrollbars-viewport]";
 
   function tagArtistSection(heading) {
     let el = heading;
-    while (el.parentElement) {
+    let contentSpacingOwner = null;
+    while (el.parentElement && !el.matches(ARTIST_SCROLL_BOUNDARY)) {
+      if (el.matches(".contentSpacing")) contentSpacingOwner = el;
       const parent = el.parentElement;
       if (parent.matches(ARTIST_GRID)) {
-        if (el === heading) return false;
-        declutter(el, "artist-page", false);
+        const owner = contentSpacingOwner || el;
+        if (
+          owner === heading ||
+          owner.querySelectorAll("h1,h2,h3,h4,[role='heading']").length > 1 ||
+          owner.querySelector(NPV_SAFE)
+        ) return false;
+        declutter(owner, "artist-page", false);
         return true;
       }
+      if (parent.matches(ARTIST_SCROLL_BOUNDARY)) return false;
       el = parent;
     }
     return false;
@@ -437,7 +491,8 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     // Drop tags an earlier build may have left on wrappers above a grid
     // (they hid the whole page); a real section's parent is a grid itself.
     for (const el of scope.querySelectorAll('[data-luma-declutter="artist-page"]')) {
-      if (!el.parentElement?.matches(ARTIST_GRID)) {
+      if (!el.parentElement?.matches(ARTIST_GRID) &&
+          !(el.matches(".contentSpacing") && el.closest(ARTIST_GRID))) {
         el.removeAttribute("data-luma-declutter");
       }
     }
@@ -447,7 +502,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
         const rect = heading.getBoundingClientRect();
         if (!rect.width && !rect.height) return; // hidden template
         const text = heading.textContent.trim();
-        if (!isArtistPageClutter(text)) return;
+        if (!isArtistPageClutter(text) || text.startsWith("Featuring ") || text.startsWith("Discovered on")) return;
         tagArtistSection(heading);
       });
   }
@@ -514,6 +569,8 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       declutterShelves();
       declutterNowPlaying();
       declutterArtistPage();
+      const pageScope = document.querySelector(ARTIST_PAGE_SCOPE);
+      if (pageScope) runDeclutterRules(pageScope);
       reviveCollapsed();
       const lyrics = detectLyrics();
       if (lyrics && state.lyrics !== true) {
