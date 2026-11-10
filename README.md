@@ -122,8 +122,9 @@ If a track has no extractable artwork (local files, some podcasts), the last pal
 
 By default the theme removes:
 
-- **Now Playing sidebar:** Credits, On tour, Merch, Next in queue (the player, lyrics preview and header are never touched).
+- **Now Playing sidebar:** Credits, On tour, Merch, Next in queue, About the artist (the player, lyrics preview and header are never touched).
 - **Home shelves:** Your top mixes, Made for you, More like …, Fans also like, Based on your recent listening. Your shortcut grid, **Your shows** and **Recents** stay.
+- **Library sidebar:** artist rows start collapsed behind the small "Artists" pill under the library header (see below).
 
 `theme.js` finds these sections by reading their headings and tags them (together with any empty wrappers they leave behind), so a Spotify markup change cannot blank a panel; `user.css` decides whether a tagged section is visible. Section matching uses Spotify's English headings, so in other languages the sections stay visible. The console logs each hidden section as `[Luma Ambient] decluttered: …`.
 
@@ -154,6 +155,22 @@ To show sections again, add variables to the end of `user.css` and run `spicetif
 ```
 
 Set only the variables for what you want to show; remove them to hide the sections again. Both kinds of variable work for every section, and the per-section one wins. Spotify may change its headings and labels between client versions.
+
+## Library sidebar categories
+
+The library list is grouped by item type. Every list row is labeled with a Spotify URI (`listrow-title-spotify:artist:<id>` inside its `aria-labelledby`), so the theme script classifies each row from that URI alone — no hashed class names, no localized heading text — which keeps the feature working on any client build and in any interface language.
+
+Each row is tagged `data-luma-lib="playlist|album|artist|podcasts|liked|audiobooks|other"`, and a small pill bar rendered under the "Your Library" header toggles whole groups: click **Artists** to show the artists again, click it once more to collapse them (the pill reads *pressed* while a group is hidden). Artists start collapsed — there can be hundreds, and they crowd out playlists and albums. The counts reflect everything the library contains, not just the rows currently rendered.
+
+Collapsed groups persist between launches in the theme's setup state, and the grouping is restorable wholesale by forcing the tagged rows visible again:
+
+```css
+:root {
+  --luma-lib-collapsed: block; /* show every library row again */
+}
+```
+
+The rows themselves are never moved: the library grid is virtualized, so only visibility changes.
 
 ## Optional decluttering
 

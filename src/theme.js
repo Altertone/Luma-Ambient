@@ -81,6 +81,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       CLASS_LYRICS,
       state.lyrics === true,
     );
+    setLibHidden(libHidden());
     let styleEl = document.getElementById("luma-ambient-setup-style");
     if (!styleEl) {
       styleEl = document.createElement("style");
@@ -268,6 +269,125 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     });
   }
 
+  /* --------------------------------------------------------------------------
+     Library sidebar grouping
+     The library list is a virtualized role=grid: rows recycle their content
+     while you scroll, so they must be re-classified on every scan, and no
+     React-managed node may ever be moved. Classification needs no class
+     names or headings: every list row is labeled with a Spotify URI
+     (aria-labelledby="listrow-title-spotify:playlist:<id>"), so the row's
+     type — playlist, album, artist, show… — is read straight from the URI.
+     Rows are tagged data-luma-lib="<group>" and user.css collapses whole
+     groups; the small filter bar rendered above the list toggles a group
+     (artists start collapsed). Groups persist in the setup state.
+     -------------------------------------------------------------------------- */
+  const LIB_TAG = "data-luma-lib";
+  const DEFAULT_LIB_HIDDEN = ["artist"];
+  // URI type → display group ("show" and "episode" are both podcasts,
+  // "collection" is Liked Songs, "audiobook"/"book" are audiobooks).
+  const LIB_GROUPS = {
+    playlist: "playlist",
+    album: "album",
+    artist: "artist",
+    show: "podcasts",
+    episode: "podcasts",
+    audiobook: "audiobooks",
+    book: "audiobooks",
+    collection: "liked",
+  };
+  const LIB_GROUP_LABELS = {
+    playlist: "Playlists",
+    album: "Albums",
+    artist: "Artists",
+    podcasts: "Podcasts",
+    audiobooks: "Audiobooks",
+    liked: "Liked",
+    other: "Other",
+  };
+  // Every row seen this session, by URI id — the grid only renders a window
+  // of items, so totals accumulate here instead of trusting what is mounted.
+  const libRowGroups = new Map();
+
+  const libHidden = () =>
+    new Set(Array.isArray(state.libHidden) ? state.libHidden : DEFAULT_LIB_HIDDEN);
+
+  function setLibHidden(groups) {
+    state.libHidden = [...groups];
+    saveState();
+    const html = document.documentElement;
+    if (state.libHidden.length) {
+      html.setAttribute("data-luma-lib-collapsed", state.libHidden.join(" "));
+    } else {
+      html.removeAttribute("data-luma-lib-collapsed");
+    }
+  }
+
+  function organizeLibrary() {
+    // The library is the role=grid inside a <nav> whose rows carry Spotify
+    // URIs in their labels — never hashed classes, and aria-label text
+    // ("Your Library") is localized, so both are avoided.
+    let grid = null;
+    for (const candidate of document.querySelectorAll("nav [role='grid']")) {
+      if (candidate.querySelector("[aria-labelledby*='spotify:']")) {
+        grid = candidate;
+        break;
+      }
+    }
+    if (!grid) return;
+    const counts = {};
+    for (const row of grid.querySelectorAll("[role='row']")) {
+      let labelledBy = "";
+      for (const el of row.querySelectorAll("[aria-labelledby]")) {
+        const value = el.getAttribute("aria-labelledby") || "";
+        if (value.includes("spotify:")) {
+          labelledBy = value;
+          break;
+        }
+      }
+      if (!labelledBy) continue; // grid header / non-item row
+      const type =
+        (labelledBy.match(/spotify:([a-z][a-z-]*):/) || [])[1] || "other";
+      const group = LIB_GROUPS[type] || "other";
+      libRowGroups.set(labelledBy, group);
+      if (row.getAttribute(LIB_TAG) !== group) row.setAttribute(LIB_TAG, group);
+      counts[group] = (counts[group] || 0) + 1;
+    }
+    // Render only the group pills; totals use everything seen this session,
+    // so counts hold still while the row window scrolls.
+    const groups = Object.keys(counts).sort();
+    const hidden = [...libHidden()];
+    const sig = JSON.stringify({ groups, counts, hidden });
+    let bar = document.getElementById("luma-lib-filter");
+    if (bar && bar.dataset.lumaSig === sig) return;
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "luma-lib-filter";
+      bar.setAttribute("aria-label", "Library categories");
+      bar.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-luma-lib-toggle]");
+        if (!button) return;
+        const groups2 = libHidden();
+        const group = button.dataset.lumaLibToggle;
+        if (groups2.has(group)) groups2.delete(group);
+        else groups2.add(group);
+        setLibHidden(groups2);
+        queueScan();
+      });
+    }
+    bar.textContent = "";
+    for (const group of groups) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.lumaLibToggle = group;
+      button.textContent = `${LIB_GROUP_LABELS[group] || group} ${counts[group]}`;
+      if (hidden.includes(group)) button.setAttribute("aria-pressed", "true");
+      bar.append(button);
+    }
+    bar.dataset.lumaSig = sig;
+    const header = grid.previousElementSibling;
+    if (header !== bar) grid.parentElement.insertBefore(bar, grid);
+  }
+
   const NPV_LABEL_HEADINGS =
     "h1,h2,h3,h4,[role='heading']";
   const clutterHeadings = (el) =>
@@ -385,6 +505,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       scanQueued = false;
       declutterShelves();
       declutterNowPlaying();
+      organizeLibrary();
       reviveCollapsed();
       const lyrics = detectLyrics();
       if (lyrics && state.lyrics !== true) {
@@ -422,7 +543,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   // Spotify rewrites the progress bar and time labels every second, and Luma
   // Lyrics re-renders its overlay continuously; neither can add a section we
   // care about, so mutations inside them do not trigger a scan.
-  const QUIET = ".playback-bar, #luma-root, #luma-ambient-toast, #luma-ambient-scrim";
+  const QUIET = ".playback-bar, #luma-root, #luma-ambient-toast, #luma-ambient-scrim, #luma-lib-filter";
   new MutationObserver((records) => {
     for (const record of records) {
       const target =
@@ -440,6 +561,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   setTimeout(() => {
     declutterShelves();
     declutterNowPlaying();
+    organizeLibrary();
   }, 1200);
 
   globalThis.LumaAmbient = {

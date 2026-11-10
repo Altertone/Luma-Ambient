@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.4 — 2026-11-10
+
+- **Library sidebar categories.** Every library row is classified from the Spotify URI inside its `aria-labelledby` (`spotify:playlist:…`, `spotify:artist:…`, …) — no hashed classes and no localized labels, so it works on any client build and language. Rows are tagged `data-luma-lib="<group>"`, and a pill bar under the "Your Library" header collapses whole groups: Artists start hidden and open with one click; Playlists, Albums, Podcasts and more can be toggled the same way. Group state persists across launches and is restorable with `--luma-lib-collapsed: block` in `user.css`. Rows are never moved (the grid is virtualized) — only visibility changes.
+- **`install.sh` / `install.ps1` now restart Spotify after `spicetify apply`.** Apply rewrites the client files and usually leaves the running process dead or half-alive; the installer now closes Spotify and relaunches it, so applying works end to end in one command.
+- The list groups are tagged independently of decluttering, so no existing restore variables change meaning.
+
 ## 1.4.3 — 2026-11-10
 
 - The About the artist block is now decluttered along with Credits, On tour, Merch, and Next in queue (restorable with `--luma-declutter-npv: block`). The panel now holds only the header, artwork, track info, player controls, and lyrics preview.

@@ -81,5 +81,11 @@ if ($NoApply) {
     Write-Host "spicetify apply failed; creating a backup and trying again..."
     spicetify backup apply
   }
+  # apply rewrites the client files and usually leaves the running Spotify
+  # dead or half-alive: close it for real, then relaunch a fresh copy.
+  Get-Process Spotify -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+  Start-Sleep -Seconds 2
+  try { Start-Process "spotify:" } catch { Write-Host "Could not relaunch Spotify automatically; start it manually." }
+  Write-Host "Spotify closed and relaunched with the new theme."
   Write-Host "Done. The first-run prompt appears once on the next Spotify launch."
 }

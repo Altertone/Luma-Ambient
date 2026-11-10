@@ -33,6 +33,44 @@ THEMES_DIR="$CONFIG_DIR/Themes"
 
 THEME_FILES=(color.ini user.css declutter.css theme.js manifest.json preview.svg)
 
+# apply leaves the client dead: close whatever is left over and start a
+# fresh Spotify again (close once, open once).
+cleanup_spotify() {
+  case "$(uname -s)" in
+    Darwin) osascript -e 'tell application "Spotify" to quit' >/dev/null 2>&1 || true ;;
+    Linux)
+      pkill -x spotify 2>/dev/null || true
+      pkill -x spotify-launcher 2>/dev/null || true ;;
+    M*|C*) taskkill.exe /IM Spotify.exe /F >/dev/null 2>&1 || true ;; # MinGit CYGWIN MINGW
+  esac
+}
+
+relaunch_spotify() {
+  case "$(uname -s)" in
+    Darwin) open -a Spotify >/dev/null 2>&1 || true ;;
+    Linux)
+      if command -v flatpak >/dev/null 2>&1 &&
+        flatpak info com.spotify.Client >/dev/null 2>&1; then
+        setsid nohup flatpak run com.spotify.Client >/dev/null 2>&1 &
+      else
+        for bin in spotify spotify-launcher; do
+          if command -v "$bin" >/dev/null 2>&1; then
+            setsid nohup "$bin" >/dev/null 2>&1 &
+            break
+          fi
+        done
+      fi ;;
+    M*|C*) powershell.exe -NoProfile -Command "Start-Process 'spotify:'" >/dev/null 2>&1 || true ;;
+  esac
+}
+
+restart_spotify() {
+  cleanup_spotify
+  sleep 2
+  relaunch_spotify
+  echo "Spotify closed and relaunched with the new theme."
+}
+
 # Prefer the folder this script lives in. When it is piped from curl there is
 # no script file (BASH_SOURCE is empty), so download the files instead.
 SRC_DIR=""
@@ -92,5 +130,8 @@ else
     echo "spicetify apply failed; creating a backup and trying again..."
     spicetify backup apply
   fi
+  # apply rewrites the client files and usually leaves the running Spotify
+  # dead or half-alive: close it for real, then relaunch a fresh copy.
+  restart_spotify
   echo "Done. The first-run prompt appears once on the next Spotify launch."
 fi

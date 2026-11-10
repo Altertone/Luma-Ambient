@@ -821,6 +821,62 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
 }
 
 /* --------------------------------------------------------------------------
+   Library sidebar — category rows and the filter bar
+   The theme script reads each list row's Spotify URI from its aria-labelledby
+   ("listrow-title-spotify:artist:<id>") and tags the row
+   data-luma-lib="<group>". That works on every client build and interface
+   language: no hashed classes and no localized label text are involved.
+   Collapsed groups are listed, space-separated, in
+   data-luma-lib-collapsed on <html>; the filter bar the script renders above
+   the list toggles them (Artists start collapsed).
+   -------------------------------------------------------------------------- */
+[data-luma-lib-collapsed~="playlist"] [data-luma-lib="playlist"],
+[data-luma-lib-collapsed~="album"] [data-luma-lib="album"],
+[data-luma-lib-collapsed~="artist"] [data-luma-lib="artist"],
+[data-luma-lib-collapsed~="podcasts"] [data-luma-lib="podcasts"],
+[data-luma-lib-collapsed~="audiobooks"] [data-luma-lib="audiobooks"],
+[data-luma-lib-collapsed~="liked"] [data-luma-lib="liked"],
+[data-luma-lib-collapsed~="other"] [data-luma-lib="other"] {
+  display: var(--luma-lib-collapsed, none) !important;
+}
+
+#luma-lib-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px 4px;
+}
+
+#luma-lib-filter [data-luma-lib-toggle] {
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+#luma-lib-filter [data-luma-lib-toggle]:hover {
+  background: var(--md-state-hover);
+  color: var(--md-on-surface);
+}
+
+/* Pressed = the group is collapsed (its rows are hidden). */
+#luma-lib-filter [aria-pressed="true"] {
+  background: color-mix(in srgb, var(--md-primary) 18%, transparent);
+  border-color: transparent;
+  color: var(--md-primary);
+}
+
+#luma-lib-filter [data-luma-lib-toggle]:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
    Luma Lyrics integration
    Luma Lyrics creates its own #luma-root overlay and injects its own styles.
    These rules are intentionally scoped to that overlay only.
