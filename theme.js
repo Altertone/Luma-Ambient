@@ -1,208 +1,10 @@
-/* Luma Ambient — theme script.
- *
- * Injected by Spicetify alongside user.css when `inject_theme_js` is enabled
- * (same mechanism the Comfy theme uses). On the first launch it asks whether
- * the Luma Lyrics extension is installed and adapts a few UI details to the
- * answer — for example hiding Spotify's native lyrics button so the playbar
- * keeps a single lyrics toggle.
- *
- * Luma Lyrics and Luma Plus are detected automatically afterwards; the saved
- * answer is corrected silently if reality changes.
- *
- * Console API (mirrors Comfy's window.Comfy):
- *   LumaAmbient.ask()    — reopen the prompt
- *   LumaAmbient.reset()  — forget the saved answer and reopen the prompt
- *   LumaAmbient.config()
- */
-(async function lumaAmbient() {
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  while (!(globalThis.Spicetify && document.body)) {
-    setTimeout(lumaAmbient, 10);
-    return;
-  }
-  if (globalThis.__lumaAmbientThemeLoaded) return;
-  globalThis.__lumaAmbientThemeLoaded = true;
-
-  const KEY = "luma-ambient-setup";
-  const CLASS_LYRICS = "luma-with-lyrics";
-  const DETECT_GRACE_MS = 3000; // how long to look for Luma Lyrics before asking
-  const CONFIRM_WINDOW_MS = 30000; // how long to keep looking after a "yes"
-
-  const loadState = () => {
-    try {
-      return JSON.parse(localStorage.getItem(KEY) || "null");
-    } catch {
-      return null;
-    }
-  };
-  const saveState = () => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {}
-  };
-
-  // lyrics: true (installed), false (not installed), null (not answered yet)
-  let state = loadState() || { lyrics: null, plus: false, asked: false };
-
-  const detectLyrics = () =>
-    Boolean(
-      globalThis.LumaLyrics ||
-        document.getElementById("luma-root") ||
-        document.querySelector(
-          'button[aria-label="Luma Lyrics"], button[title="Luma Lyrics"]',
-        ),
-    );
-  const detectPlus = () =>
-    Boolean(globalThis.LumaPlus || document.getElementById("luma-plus-style"));
-
-  const HIDE_RULES = `
-/* Luma Ambient — keep a single lyrics button on the playbar.
-   Spotify's own lyrics control is hidden while Luma Lyrics provides the
-   lyrics UI. Luma's own toggle is excluded from every rule. */
-html.${CLASS_LYRICS} button[data-testid="lyrics-button"]:not([aria-label="Luma Lyrics"]),
-html.${CLASS_LYRICS} button[data-testid="lyrics-toggle-button"]:not([aria-label="Luma Lyrics"]),
-html.${CLASS_LYRICS} .main-nowPlayingBar-lyricsButton:not([aria-label="Luma Lyrics"]),
-html.${CLASS_LYRICS} button[title="Lyrics"]:not([aria-label="Luma Lyrics"]),
-html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics"]) {
-  display: none !important;
-}
-`;
-
-  function apply() {
-    document.documentElement.classList.toggle(
-      CLASS_LYRICS,
-      state.lyrics === true,
-    );
-    let styleEl = document.getElementById("luma-ambient-setup-style");
-    if (!styleEl) {
-      styleEl = document.createElement("style");
-      styleEl.id = "luma-ambient-setup-style";
-      document.head.append(styleEl);
-    }
-    styleEl.textContent = state.lyrics === true ? HIDE_RULES : "";
-    if (state.plus) applyPlus();
-  }
-
-  // Reserved for future Luma Plus-specific adjustments. Detection and the
-  // saved flag are already wired; add rules here as they are needed.
-  function applyPlus() {}
-
-  /* --------------------------------------------------------------------------
-     Decluttering (text-based, markup-tolerant)
-     CSS cannot match elements by their heading text, and Spotify's Now Playing
-     panel markup keeps shifting, so the theme script hides these sections by
-     reading their headings. Nothing structural is hidden — only the section
-     that owns the heading, and never the lyrics, player, or panel header.
-
-     Opt out per group by defining (e.g. in a local user.css override):
-       :root { --luma-declutter-npv: block; --luma-declutter-shelves: block; }
-     -------------------------------------------------------------------------- */
-  const NPV_LABELS = ["Credits", "On tour", "Merch", "Next in queue", "Next up"];
-  const SHELF_PREFIXES = [
-    "More like",
-    "Fans also like",
-    "Based on your recent listening",
-  ];
-
-  const declutteredOnce = new WeakSet();
-  function hideDecluttered(el, group) {
-    el.style.setProperty(
-      "display",
-      `var(--luma-declutter-${group}, none)`,
-      "important",
-    );
-    collapseEmptyParents(el);
-    if (declutteredOnce.has(el)) return;
-    declutteredOnce.add(el);
-    console.info(`[Luma Ambient] decluttered: ${el.textContent.slice(0, 60).trim()}…`);
-  }
-
-  // After a section is hidden, remove the wrappers it left behind so the
-  // block disappears entirely instead of leaving an empty gap. Never climbs
-  // into layout roots, and stops as soon as a parent still has content.
-  const LAYOUT_ROOTS =
-    ".Root__right-sidebar, .Root__main-view, .Root__nav-bar, .main-nowPlayingBar-nowPlayingBar, .main-home-content, .Root__top-container, body, html";
-
-  function collapseEmptyParents(el) {
-    let hiddenEl = el;
-    let parent = el.parentElement;
-    for (let depth = 0; depth < 3 && parent; depth++) {
-      if (parent.matches(LAYOUT_ROOTS)) break;
-      const hasVisibleContent = Array.from(parent.childNodes).some((node) => {
-        if (node.nodeType === Node.TEXT_NODE) return node.textContent.trim().length > 0;
-        if (node.nodeType !== Node.ELEMENT_NODE || node === hiddenEl) return false;
-        if (getComputedStyle(node).display === "none") return false;
-        if (node.querySelector("img, canvas, svg, video, input, button, a")) return true;
-        return node.textContent.trim().length > 0;
-      });
-      if (hasVisibleContent) break;
-      parent.style.setProperty("display", "var(--luma-declutter-npv, none)", "important");
-      hiddenEl = parent;
-      parent = parent.parentElement;
-    }
-  }
-
-  function declutterShelves() {
-    document
-      .querySelectorAll('section[data-testid="component-shelf"]')
-      .forEach((shelf) => {
-        const label = (shelf.getAttribute("aria-label") || "").trim();
-        const heading = shelf.querySelector("h1,h2,h3,h4,[role='heading']");
-        const text = heading ? heading.textContent.trim() : "";
-        const match = SHELF_PREFIXES.some(
-          (p) =>
-            label === p ||
-            label.startsWith(`${p} `) ||
-            text === p ||
-            text.startsWith(`${p} `),
-        );
-        if (match) hideDecluttered(shelf, "shelves");
-      });
-  }
-
-  function declutterNowPlaying() {
-    const scope =
-      document.querySelector(".Root__right-sidebar") ||
-      document.querySelector(".NowPlayingView") ||
-      document.querySelector("[data-npv-root]");
-    if (!scope) return;
-
-    scope.querySelectorAll("h1,h2,h3,h4,[role='heading']").forEach((heading) => {
-      const text = heading.textContent.trim();
-      if (!NPV_LABELS.includes(text)) return;
-
-      let el = heading;
-      for (let depth = 0; depth < 8 && el.parentElement; depth++) {
-        el = el.parentElement;
-        if (el === scope) break;
-        const cls = typeof el.className === "string" ? el.className : "";
-        const testid = el.getAttribute("data-testid") || "";
-        const isSection =
-          el.tagName === "SECTION" ||
-          el.tagName === "ARTICLE" ||
-          /nowPlayingView|npv/i.test(`${cls} ${testid}`);
-        if (!isSection) continue;
-
-        // Safety: never hide the lyrics preview, player controls, or header.
-        if (
-          el.querySelector(
-            ".main-nowPlayingView-lyricsContent, .main-nowPlayingView-playerControls, .main-nowPlayingView-header, [data-testid='NPV_Lyrics']",
-          )
-        )
-          continue;
-
-        hideDecluttered(el, "npv");
-        return;
-      }
-    });
-  }
-
-  const UI_CSS = `
+/* Luma Ambient 1.4.0 — built from src/ by scripts/build.mjs. Edit the sources in src/, not this file. */
+(()=>{function q(t){return t<0?-1:t===0?0:1}function st(t,e,r){return(1-r)*t+r*e}function Jt(t,e,r){return r<t?t:r>e?e:r}function mt(t,e,r){return r<t?t:r>e?e:r}function ht(t){return t=t%360,t<0&&(t=t+360),t}function z(t){return t=t%360,t<0&&(t=t+360),t}function Nt(t,e){return 180-Math.abs(Math.abs(t-e)-180)}function gt(t,e){let r=t[0]*e[0][0]+t[1]*e[0][1]+t[2]*e[0][2],n=t[0]*e[1][0]+t[1]*e[1][1]+t[2]*e[1][2],o=t[0]*e[2][0]+t[1]*e[2][1]+t[2]*e[2][2];return[r,n,o]}var Zt=[[.41233895,.35762064,.18051042],[.2126,.7152,.0722],[.01932141,.11916382,.95034478]],xe=[[3.2413774792388685,-1.5376652402851851,-.49885366846268053],[-.9691452513005321,1.8758853451067872,.04156585616912061],[.05562093689691305,-.20395524564742123,1.0571799111220335]],Qt=[95.047,100,108.883];function wt(t,e,r){return(255<<24|(t&255)<<16|(e&255)<<8|r&255)>>>0}function Vt(t){let e=it(t[0]),r=it(t[1]),n=it(t[2]);return wt(e,r,n)}function bt(t){return t>>16&255}function xt(t){return t>>8&255}function Pt(t){return t&255}function te(t,e,r){let n=xe,o=n[0][0]*t+n[0][1]*e+n[0][2]*r,i=n[1][0]*t+n[1][1]*e+n[1][2]*r,s=n[2][0]*t+n[2][1]*e+n[2][2]*r,c=it(o),l=it(i),u=it(s);return wt(c,l,u)}function Pe(t){let e=et(bt(t)),r=et(xt(t)),n=et(Pt(t));return gt([e,r,n],Zt)}function zt(t){let e=et(bt(t)),r=et(xt(t)),n=et(Pt(t)),o=Zt,i=o[0][0]*e+o[0][1]*r+o[0][2]*n,s=o[1][0]*e+o[1][1]*r+o[1][2]*n,c=o[2][0]*e+o[2][1]*r+o[2][2]*n,l=Qt,u=i/l[0],m=s/l[1],d=c/l[2],y=yt(u),p=yt(m),f=yt(d),h=116*p-16,C=500*(y-p),x=200*(p-f);return[h,C,x]}function ee(t){let e=J(t),r=it(e);return wt(r,r,r)}function It(t){let e=Pe(t)[1];return 116*yt(e/100)-16}function J(t){return 100*Ae((t+16)/116)}function At(t){return yt(t/100)*116-16}function et(t){let e=t/255;return e<=.040449936?e/12.92*100:Math.pow((e+.055)/1.055,2.4)*100}function it(t){let e=t/100,r=0;return e<=.0031308?r=e*12.92:r=1.055*Math.pow(e,1/2.4)-.055,Jt(0,255,Math.round(r*255))}function re(){return Qt}function yt(t){let e=.008856451679035631,r=24389/27;return t>e?Math.pow(t,1/3):(r*t+16)/116}function Ae(t){let e=.008856451679035631,r=24389/27,n=t*t*t;return n>e?n:(116*t-16)/r}var K=class t{static make(e=re(),r=200/Math.PI*J(50)/100,n=50,o=2,i=!1){let s=e,c=s[0]*.401288+s[1]*.650173+s[2]*-.051461,l=s[0]*-.250268+s[1]*1.204414+s[2]*.045854,u=s[0]*-.002079+s[1]*.048952+s[2]*.953127,m=.8+o/10,d=m>=.9?st(.59,.69,(m-.9)*10):st(.525,.59,(m-.8)*10),y=i?1:m*(1-1/3.6*Math.exp((-r-42)/92));y=y>1?1:y<0?0:y;let p=m,f=[y*(100/c)+1-y,y*(100/l)+1-y,y*(100/u)+1-y],h=1/(5*r+1),C=h*h*h*h,x=1-C,T=C*r+.1*x*x*Math.cbrt(5*r),g=J(n)/e[1],M=1.48+Math.sqrt(g),w=.725/Math.pow(g,.2),H=w,v=[Math.pow(T*f[0]*c/100,.42),Math.pow(T*f[1]*l/100,.42),Math.pow(T*f[2]*u/100,.42)],L=[400*v[0]/(v[0]+27.13),400*v[1]/(v[1]+27.13),400*v[2]/(v[2]+27.13)],E=(2*L[0]+L[1]+.05*L[2])*w;return new t(g,E,w,H,d,p,f,T,Math.pow(T,.25),M)}constructor(e,r,n,o,i,s,c,l,u,m){this.n=e,this.aw=r,this.nbb=n,this.ncb=o,this.c=i,this.nc=s,this.rgbD=c,this.fl=l,this.fLRoot=u,this.z=m}};K.DEFAULT=K.make();var rt=class t{constructor(e,r,n,o,i,s,c,l,u){this.hue=e,this.chroma=r,this.j=n,this.q=o,this.m=i,this.s=s,this.jstar=c,this.astar=l,this.bstar=u}distance(e){let r=this.jstar-e.jstar,n=this.astar-e.astar,o=this.bstar-e.bstar,i=Math.sqrt(r*r+n*n+o*o);return 1.41*Math.pow(i,.63)}static fromInt(e){return t.fromIntInViewingConditions(e,K.DEFAULT)}static fromIntInViewingConditions(e,r){let n=(e&16711680)>>16,o=(e&65280)>>8,i=e&255,s=et(n),c=et(o),l=et(i),u=.41233895*s+.35762064*c+.18051042*l,m=.2126*s+.7152*c+.0722*l,d=.01932141*s+.11916382*c+.95034478*l,y=.401288*u+.650173*m-.051461*d,p=-.250268*u+1.204414*m+.045854*d,f=-.002079*u+.048952*m+.953127*d,h=r.rgbD[0]*y,C=r.rgbD[1]*p,x=r.rgbD[2]*f,T=Math.pow(r.fl*Math.abs(h)/100,.42),g=Math.pow(r.fl*Math.abs(C)/100,.42),M=Math.pow(r.fl*Math.abs(x)/100,.42),w=q(h)*400*T/(T+27.13),H=q(C)*400*g/(g+27.13),v=q(x)*400*M/(M+27.13),L=(11*w+-12*H+v)/11,E=(w+H-2*v)/9,A=(20*w+20*H+21*v)/20,V=(40*w+20*H+v)/20,G=Math.atan2(E,L)*180/Math.PI,_=G<0?G+360:G>=360?G-360:G,I=_*Math.PI/180,S=V*r.nbb,F=100*Math.pow(S/r.aw,r.c*r.z),D=4/r.c*Math.sqrt(F/100)*(r.aw+4)*r.fLRoot,X=_<20.14?_+360:_,ut=.25*(Math.cos(X*Math.PI/180+2)+3.8),kt=5e4/13*ut*r.nc*r.ncb*Math.sqrt(L*L+E*E)/(A+.305),Tt=Math.pow(kt,.9)*Math.pow(1.64-Math.pow(.29,r.n),.73),Wt=Tt*Math.sqrt(F/100),Kt=Wt*r.fLRoot,pe=50*Math.sqrt(Tt*r.c/(r.aw+4)),ge=(1+100*.007)*F/(1+.007*F),Xt=1/.0228*Math.log(1+.0228*Kt),ye=Xt*Math.cos(I),be=Xt*Math.sin(I);return new t(_,Wt,F,D,Kt,pe,ge,ye,be)}static fromJch(e,r,n){return t.fromJchInViewingConditions(e,r,n,K.DEFAULT)}static fromJchInViewingConditions(e,r,n,o){let i=4/o.c*Math.sqrt(e/100)*(o.aw+4)*o.fLRoot,s=r*o.fLRoot,c=r/Math.sqrt(e/100),l=50*Math.sqrt(c*o.c/(o.aw+4)),u=n*Math.PI/180,m=(1+100*.007)*e/(1+.007*e),d=1/.0228*Math.log(1+.0228*s),y=d*Math.cos(u),p=d*Math.sin(u);return new t(n,r,e,i,s,l,m,y,p)}static fromUcs(e,r,n){return t.fromUcsInViewingConditions(e,r,n,K.DEFAULT)}static fromUcsInViewingConditions(e,r,n,o){let i=r,s=n,c=Math.sqrt(i*i+s*s),u=(Math.exp(c*.0228)-1)/.0228/o.fLRoot,m=Math.atan2(s,i)*(180/Math.PI);m<0&&(m+=360);let d=e/(1-(e-100)*.007);return t.fromJchInViewingConditions(d,u,m,o)}toInt(){return this.viewed(K.DEFAULT)}viewed(e){let r=this.chroma===0||this.j===0?0:this.chroma/Math.sqrt(this.j/100),n=Math.pow(r/Math.pow(1.64-Math.pow(.29,e.n),.73),1/.9),o=this.hue*Math.PI/180,i=.25*(Math.cos(o+2)+3.8),s=e.aw*Math.pow(this.j/100,1/e.c/e.z),c=i*(5e4/13)*e.nc*e.ncb,l=s/e.nbb,u=Math.sin(o),m=Math.cos(o),d=23*(l+.305)*n/(23*c+11*n*m+108*n*u),y=d*m,p=d*u,f=(460*l+451*y+288*p)/1403,h=(460*l-891*y-261*p)/1403,C=(460*l-220*y-6300*p)/1403,x=Math.max(0,27.13*Math.abs(f)/(400-Math.abs(f))),T=q(f)*(100/e.fl)*Math.pow(x,1/.42),g=Math.max(0,27.13*Math.abs(h)/(400-Math.abs(h))),M=q(h)*(100/e.fl)*Math.pow(g,1/.42),w=Math.max(0,27.13*Math.abs(C)/(400-Math.abs(C))),H=q(C)*(100/e.fl)*Math.pow(w,1/.42),v=T/e.rgbD[0],L=M/e.rgbD[1],E=H/e.rgbD[2],A=1.86206786*v-1.01125463*L+.14918677*E,V=.38752654*v+.62144744*L-.00897398*E,Y=-.0158415*v-.03412294*L+1.04996444*E;return te(A,V,Y)}static fromXyzInViewingConditions(e,r,n,o){let i=.401288*e+.650173*r-.051461*n,s=-.250268*e+1.204414*r+.045854*n,c=-.002079*e+.048952*r+.953127*n,l=o.rgbD[0]*i,u=o.rgbD[1]*s,m=o.rgbD[2]*c,d=Math.pow(o.fl*Math.abs(l)/100,.42),y=Math.pow(o.fl*Math.abs(u)/100,.42),p=Math.pow(o.fl*Math.abs(m)/100,.42),f=q(l)*400*d/(d+27.13),h=q(u)*400*y/(y+27.13),C=q(m)*400*p/(p+27.13),x=(11*f+-12*h+C)/11,T=(f+h-2*C)/9,g=(20*f+20*h+21*C)/20,M=(40*f+20*h+C)/20,H=Math.atan2(T,x)*180/Math.PI,v=H<0?H+360:H>=360?H-360:H,L=v*Math.PI/180,E=M*o.nbb,A=100*Math.pow(E/o.aw,o.c*o.z),V=4/o.c*Math.sqrt(A/100)*(o.aw+4)*o.fLRoot,Y=v<20.14?v+360:v,G=1/4*(Math.cos(Y*Math.PI/180+2)+3.8),I=5e4/13*G*o.nc*o.ncb*Math.sqrt(x*x+T*T)/(g+.305),S=Math.pow(I,.9)*Math.pow(1.64-Math.pow(.29,o.n),.73),F=S*Math.sqrt(A/100),D=F*o.fLRoot,X=50*Math.sqrt(S*o.c/(o.aw+4)),ut=(1+100*.007)*A/(1+.007*A),W=Math.log(1+.0228*D)/.0228,kt=W*Math.cos(L),Tt=W*Math.sin(L);return new t(v,F,A,V,D,X,ut,kt,Tt)}xyzInViewingConditions(e){let r=this.chroma===0||this.j===0?0:this.chroma/Math.sqrt(this.j/100),n=Math.pow(r/Math.pow(1.64-Math.pow(.29,e.n),.73),1/.9),o=this.hue*Math.PI/180,i=.25*(Math.cos(o+2)+3.8),s=e.aw*Math.pow(this.j/100,1/e.c/e.z),c=i*(5e4/13)*e.nc*e.ncb,l=s/e.nbb,u=Math.sin(o),m=Math.cos(o),d=23*(l+.305)*n/(23*c+11*n*m+108*n*u),y=d*m,p=d*u,f=(460*l+451*y+288*p)/1403,h=(460*l-891*y-261*p)/1403,C=(460*l-220*y-6300*p)/1403,x=Math.max(0,27.13*Math.abs(f)/(400-Math.abs(f))),T=q(f)*(100/e.fl)*Math.pow(x,1/.42),g=Math.max(0,27.13*Math.abs(h)/(400-Math.abs(h))),M=q(h)*(100/e.fl)*Math.pow(g,1/.42),w=Math.max(0,27.13*Math.abs(C)/(400-Math.abs(C))),H=q(C)*(100/e.fl)*Math.pow(w,1/.42),v=T/e.rgbD[0],L=M/e.rgbD[1],E=H/e.rgbD[2],A=1.86206786*v-1.01125463*L+.14918677*E,V=.38752654*v+.62144744*L-.00897398*E,Y=-.0158415*v-.03412294*L+1.04996444*E;return[A,V,Y]}};var Q=class t{static sanitizeRadians(e){return(e+Math.PI*8)%(Math.PI*2)}static trueDelinearized(e){let r=e/100,n=0;return r<=.0031308?n=r*12.92:n=1.055*Math.pow(r,1/2.4)-.055,n*255}static chromaticAdaptation(e){let r=Math.pow(Math.abs(e),.42);return q(e)*400*r/(r+27.13)}static hueOf(e){let r=gt(e,t.SCALED_DISCOUNT_FROM_LINRGB),n=t.chromaticAdaptation(r[0]),o=t.chromaticAdaptation(r[1]),i=t.chromaticAdaptation(r[2]),s=(11*n+-12*o+i)/11,c=(n+o-2*i)/9;return Math.atan2(c,s)}static areInCyclicOrder(e,r,n){let o=t.sanitizeRadians(r-e),i=t.sanitizeRadians(n-e);return o<i}static intercept(e,r,n){return(r-e)/(n-e)}static lerpPoint(e,r,n){return[e[0]+(n[0]-e[0])*r,e[1]+(n[1]-e[1])*r,e[2]+(n[2]-e[2])*r]}static setCoordinate(e,r,n,o){let i=t.intercept(e[o],r,n[o]);return t.lerpPoint(e,i,n)}static isBounded(e){return 0<=e&&e<=100}static nthVertex(e,r){let n=t.Y_FROM_LINRGB[0],o=t.Y_FROM_LINRGB[1],i=t.Y_FROM_LINRGB[2],s=r%4<=1?0:100,c=r%2===0?0:100;if(r<4){let l=s,u=c,m=(e-l*o-u*i)/n;return t.isBounded(m)?[m,l,u]:[-1,-1,-1]}else if(r<8){let l=s,u=c,m=(e-u*n-l*i)/o;return t.isBounded(m)?[u,m,l]:[-1,-1,-1]}else{let l=s,u=c,m=(e-l*n-u*o)/i;return t.isBounded(m)?[l,u,m]:[-1,-1,-1]}}static bisectToSegment(e,r){let n=[-1,-1,-1],o=n,i=0,s=0,c=!1,l=!0;for(let u=0;u<12;u++){let m=t.nthVertex(e,u);if(m[0]<0)continue;let d=t.hueOf(m);if(!c){n=m,o=m,i=d,s=d,c=!0;continue}(l||t.areInCyclicOrder(i,d,s))&&(l=!1,t.areInCyclicOrder(i,r,d)?(o=m,s=d):(n=m,i=d))}return[n,o]}static midpoint(e,r){return[(e[0]+r[0])/2,(e[1]+r[1])/2,(e[2]+r[2])/2]}static criticalPlaneBelow(e){return Math.floor(e-.5)}static criticalPlaneAbove(e){return Math.ceil(e-.5)}static bisectToLimit(e,r){let n=t.bisectToSegment(e,r),o=n[0],i=t.hueOf(o),s=n[1];for(let c=0;c<3;c++)if(o[c]!==s[c]){let l=-1,u=255;o[c]<s[c]?(l=t.criticalPlaneBelow(t.trueDelinearized(o[c])),u=t.criticalPlaneAbove(t.trueDelinearized(s[c]))):(l=t.criticalPlaneAbove(t.trueDelinearized(o[c])),u=t.criticalPlaneBelow(t.trueDelinearized(s[c])));for(let m=0;m<8&&!(Math.abs(u-l)<=1);m++){let d=Math.floor((l+u)/2),y=t.CRITICAL_PLANES[d],p=t.setCoordinate(o,y,s,c),f=t.hueOf(p);t.areInCyclicOrder(i,r,f)?(s=p,u=d):(o=p,i=f,l=d)}}return t.midpoint(o,s)}static inverseChromaticAdaptation(e){let r=Math.abs(e),n=Math.max(0,27.13*r/(400-r));return q(e)*Math.pow(n,1/.42)}static findResultByJ(e,r,n){let o=Math.sqrt(n)*11,i=K.DEFAULT,s=1/Math.pow(1.64-Math.pow(.29,i.n),.73),l=.25*(Math.cos(e+2)+3.8)*(5e4/13)*i.nc*i.ncb,u=Math.sin(e),m=Math.cos(e);for(let d=0;d<5;d++){let y=o/100,p=r===0||o===0?0:r/Math.sqrt(y),f=Math.pow(p*s,1/.9),C=i.aw*Math.pow(y,1/i.c/i.z)/i.nbb,x=23*(C+.305)*f/(23*l+11*f*m+108*f*u),T=x*m,g=x*u,M=(460*C+451*T+288*g)/1403,w=(460*C-891*T-261*g)/1403,H=(460*C-220*T-6300*g)/1403,v=t.inverseChromaticAdaptation(M),L=t.inverseChromaticAdaptation(w),E=t.inverseChromaticAdaptation(H),A=gt([v,L,E],t.LINRGB_FROM_SCALED_DISCOUNT);if(A[0]<0||A[1]<0||A[2]<0)return 0;let V=t.Y_FROM_LINRGB[0],Y=t.Y_FROM_LINRGB[1],G=t.Y_FROM_LINRGB[2],_=V*A[0]+Y*A[1]+G*A[2];if(_<=0)return 0;if(d===4||Math.abs(_-n)<.002)return A[0]>100.01||A[1]>100.01||A[2]>100.01?0:Vt(A);o=o-(_-n)*o/(2*_)}return 0}static solveToInt(e,r,n){if(r<1e-4||n<1e-4||n>99.9999)return ee(n);e=z(e);let o=e/180*Math.PI,i=J(n),s=t.findResultByJ(o,r,i);if(s!==0)return s;let c=t.bisectToLimit(i,o);return Vt(c)}static solveToCam(e,r,n){return rt.fromInt(t.solveToInt(e,r,n))}};Q.SCALED_DISCOUNT_FROM_LINRGB=[[.001200833568784504,.002389694492170889,.0002795742885861124],[.0005891086651375999,.0029785502573438758,.0003270666104008398],[.00010146692491640572,.0005364214359186694,.0032979401770712076]];Q.LINRGB_FROM_SCALED_DISCOUNT=[[1373.2198709594231,-1100.4251190754821,-7.278681089101213],[-271.815969077903,559.6580465940733,-32.46047482791194],[1.9622899599665666,-57.173814538844006,308.7233197812385]];Q.Y_FROM_LINRGB=[.2126,.7152,.0722];Q.CRITICAL_PLANES=[.015176349177441876,.045529047532325624,.07588174588720938,.10623444424209313,.13658714259697685,.16693984095186062,.19729253930674434,.2276452376616281,.2579979360165119,.28835063437139563,.3188300904430532,.350925934958123,.3848314933096426,.42057480301049466,.458183274052838,.4976837250274023,.5391024159806381,.5824650784040898,.6277969426914107,.6751227633498623,.7244668422128921,.775853049866786,.829304845476233,.8848452951698498,.942497089126609,1.0022825574869039,1.0642236851973577,1.1283421258858297,1.1946592148522128,1.2631959812511864,1.3339731595349034,1.407011200216447,1.4823302800086415,1.5599503113873272,1.6398909516233677,1.7221716113234105,1.8068114625156377,1.8938294463134073,1.9832442801866852,2.075074464868551,2.1693382909216234,2.2660538449872063,2.36523901573795,2.4669114995532007,2.5710888059345764,2.6777882626779785,2.7870270208169257,2.898822059350997,3.0131901897720907,3.1301480604002863,3.2497121605402226,3.3718988244681087,3.4967242352587946,3.624204428461639,3.754355295633311,3.887192587735158,4.022731918402185,4.160988767090289,4.301978482107941,4.445716283538092,4.592217266055746,4.741496401646282,4.893568542229298,5.048448422192488,5.20615066083972,5.3666897647573375,5.5300801301023865,5.696336044816294,5.865471690767354,6.037501145825082,6.212438385869475,6.390297286737924,6.571091626112461,6.7548350853498045,6.941541251256611,7.131223617812143,7.323895587840543,7.5195704746346665,7.7182615035334345,7.919981813454504,8.124744458384042,8.332562408825165,8.543448553206703,8.757415699253682,8.974476575321063,9.194643831691977,9.417930041841839,9.644347703669503,9.873909240696694,10.106627003236781,10.342513269534024,10.58158024687427,10.8238400726681,11.069304815507364,11.317986476196008,11.569896988756009,11.825048221409341,12.083451977536606,12.345119996613247,12.610063955123938,12.878295467455942,13.149826086772048,13.42466730586372,13.702830557985108,13.984327217668513,14.269168601521828,14.55736596900856,14.848930523210871,15.143873411576273,15.44220572664832,15.743938506781891,16.04908273684337,16.35764934889634,16.66964922287304,16.985093187232053,17.30399201960269,17.62635644741625,17.95219714852476,18.281524751807332,18.614349837764564,18.95068293910138,19.290534541298456,19.633915083172692,19.98083495742689,20.331304511189067,20.685334046541502,21.042933821039977,21.404114048223256,21.76888489811322,22.137256497705877,22.50923893145328,22.884842241736916,23.264076429332462,23.6469514538663,24.033477234264016,24.42366364919083,24.817520537484558,25.21505769858089,25.61628489293138,26.021211842414342,26.429848230738664,26.842203703840827,27.258287870275353,27.678110301598522,28.10168053274597,28.529008062403893,28.96010235337422,29.39497283293396,29.83362889318845,30.276079891419332,30.722335150426627,31.172403958865512,31.62629557157785,32.08401920991837,32.54558406207592,33.010999283389665,33.4802739966603,33.953417292456834,34.430438229418264,34.911345834551085,35.39614910352207,35.88485700094671,36.37747846067349,36.87402238606382,37.37449765026789,37.87891309649659,38.38727753828926,38.89959975977785,39.41588851594697,39.93615253289054,40.460400508064545,40.98864111053629,41.520882981230194,42.05713473317016,42.597404951718396,43.141702194811224,43.6900349931913,44.24241185063697,44.798841244188324,45.35933162437017,45.92389141541209,46.49252901546552,47.065252796817916,47.64207110610409,48.22299226451468,48.808024568002054,49.3971762874833,49.9904556690408,50.587870934119984,51.189430279724725,51.79514187861014,52.40501387947288,53.0190544071392,53.637271562750364,54.259673423945976,54.88626804504493,55.517063457223934,56.15206766869424,56.79128866487574,57.43473440856916,58.08241284012621,58.734331877617365,59.39049941699807,60.05092333227251,60.715611475655585,61.38457167773311,62.057811747619894,62.7353394731159,63.417162620860914,64.10328893648692,64.79372614476921,65.48848194977529,66.18756403501224,66.89098006357258,67.59873767827808,68.31084450182222,69.02730813691093,69.74813616640164,70.47333615344107,71.20291564160104,71.93688215501312,72.67524319850172,73.41800625771542,74.16517879925733,74.9167682708136,75.67278210128072,76.43322770089146,77.1981124613393,77.96744375590167,78.74122893956174,79.51947534912904,80.30219030335869,81.08938110306934,81.88105503125999,82.67721935322541,83.4778813166706,84.28304815182372,85.09272707154808,85.90692527145302,86.72564993000343,87.54890820862819,88.3767072518277,89.2090541872801,90.04595612594655,90.88742016217518,91.73345337380438,92.58406282226491,93.43925555268066,94.29903859396902,95.16341895893969,96.03240364439274,96.9059996312159,97.78421388448044,98.6670533535366,99.55452497210776];var B=class t{static from(e,r,n){return new t(Q.solveToInt(e,r,n))}static fromInt(e){return new t(e)}toInt(){return this.argb}get hue(){return this.internalHue}set hue(e){this.setInternalState(Q.solveToInt(e,this.internalChroma,this.internalTone))}get chroma(){return this.internalChroma}set chroma(e){this.setInternalState(Q.solveToInt(this.internalHue,e,this.internalTone))}get tone(){return this.internalTone}set tone(e){this.setInternalState(Q.solveToInt(this.internalHue,this.internalChroma,e))}constructor(e){this.argb=e;let r=rt.fromInt(e);this.internalHue=r.hue,this.internalChroma=r.chroma,this.internalTone=It(e),this.argb=e}setInternalState(e){let r=rt.fromInt(e);this.internalHue=r.hue,this.internalChroma=r.chroma,this.internalTone=It(e),this.argb=e}inViewingConditions(e){let n=rt.fromInt(this.toInt()).xyzInViewingConditions(e),o=rt.fromXyzInViewingConditions(n[0],n[1],n[2],K.make());return t.from(o.hue,o.chroma,At(n[1]))}};var j=class t{static ratioOfTones(e,r){return e=mt(0,100,e),r=mt(0,100,r),t.ratioOfYs(J(e),J(r))}static ratioOfYs(e,r){let n=e>r?e:r,o=n===r?e:r;return(n+5)/(o+5)}static lighter(e,r){if(e<0||e>100)return-1;let n=J(e),o=r*(n+5)-5,i=t.ratioOfYs(o,n),s=Math.abs(i-r);if(i<r&&s>.04)return-1;let c=At(o)+.4;return c<0||c>100?-1:c}static darker(e,r){if(e<0||e>100)return-1;let n=J(e),o=(n+5)/r-5,i=t.ratioOfYs(n,o),s=Math.abs(i-r);if(i<r&&s>.04)return-1;let c=At(o)-.4;return c<0||c>100?-1:c}static lighterUnsafe(e,r){let n=t.lighter(e,r);return n<0?100:n}static darkerUnsafe(e,r){let n=t.darker(e,r);return n<0?0:n}};var ot=class t{static isDisliked(e){let r=Math.round(e.hue)>=90&&Math.round(e.hue)<=111,n=Math.round(e.chroma)>16,o=Math.round(e.tone)<65;return r&&n&&o}static fixIfDisliked(e){return t.isDisliked(e)?B.from(e.hue,e.chroma,70):e}};var b=class t{static fromPalette(e){return new t(e.name??"",e.palette,e.tone,e.isBackground??!1,e.background,e.secondBackground,e.contrastCurve,e.toneDeltaPair)}constructor(e,r,n,o,i,s,c,l){if(this.name=e,this.palette=r,this.tone=n,this.isBackground=o,this.background=i,this.secondBackground=s,this.contrastCurve=c,this.toneDeltaPair=l,this.hctCache=new Map,!i&&s)throw new Error(`Color ${e} has secondBackgrounddefined, but background is not defined.`);if(!i&&c)throw new Error(`Color ${e} has contrastCurvedefined, but background is not defined.`);if(i&&!c)throw new Error(`Color ${e} has backgrounddefined, but contrastCurve is not defined.`)}getArgb(e){return this.getHct(e).toInt()}getHct(e){let r=this.hctCache.get(e);if(r!=null)return r;let n=this.getTone(e),o=this.palette(e).getHct(n);return this.hctCache.size>4&&this.hctCache.clear(),this.hctCache.set(e,o),o}getTone(e){let r=e.contrastLevel<0;if(this.toneDeltaPair){let n=this.toneDeltaPair(e),o=n.roleA,i=n.roleB,s=n.delta,c=n.polarity,l=n.stayTogether,m=this.background(e).getTone(e),d=c==="nearer"||c==="lighter"&&!e.isDark||c==="darker"&&e.isDark,y=d?o:i,p=d?i:o,f=this.name===y.name,h=e.isDark?1:-1,C=y.contrastCurve.get(e.contrastLevel),x=p.contrastCurve.get(e.contrastLevel),T=y.tone(e),g=j.ratioOfTones(m,T)>=C?T:t.foregroundTone(m,C),M=p.tone(e),w=j.ratioOfTones(m,M)>=x?M:t.foregroundTone(m,x);return r&&(g=t.foregroundTone(m,C),w=t.foregroundTone(m,x)),(w-g)*h>=s||(w=mt(0,100,g+s*h),(w-g)*h>=s||(g=mt(0,100,w-s*h))),50<=g&&g<60?h>0?(g=60,w=Math.max(w,g+s*h)):(g=49,w=Math.min(w,g+s*h)):50<=w&&w<60&&(l?h>0?(g=60,w=Math.max(w,g+s*h)):(g=49,w=Math.min(w,g+s*h)):h>0?w=60:w=49),f?g:w}else{let n=this.tone(e);if(this.background==null)return n;let o=this.background(e).getTone(e),i=this.contrastCurve.get(e.contrastLevel);if(j.ratioOfTones(o,n)>=i||(n=t.foregroundTone(o,i)),r&&(n=t.foregroundTone(o,i)),this.isBackground&&50<=n&&n<60&&(j.ratioOfTones(49,o)>=i?n=49:n=60),this.secondBackground){let[s,c]=[this.background,this.secondBackground],[l,u]=[s(e).getTone(e),c(e).getTone(e)],[m,d]=[Math.max(l,u),Math.min(l,u)];if(j.ratioOfTones(m,n)>=i&&j.ratioOfTones(d,n)>=i)return n;let y=j.lighter(m,i),p=j.darker(d,i),f=[];return y!==-1&&f.push(y),p!==-1&&f.push(p),t.tonePrefersLightForeground(l)||t.tonePrefersLightForeground(u)?y<0?100:y:f.length===1?f[0]:p<0?0:p}return n}}static foregroundTone(e,r){let n=j.lighterUnsafe(e,r),o=j.darkerUnsafe(e,r),i=j.ratioOfTones(n,e),s=j.ratioOfTones(o,e);if(t.tonePrefersLightForeground(e)){let l=Math.abs(i-s)<.1&&i<r&&s<r;return i>=r||i>=s||l?n:o}else return s>=r||s>=i?o:n}static tonePrefersLightForeground(e){return Math.round(e)<60}static toneAllowsLightForeground(e){return Math.round(e)<=49}static enableLightForeground(e){return t.tonePrefersLightForeground(e)&&!t.toneAllowsLightForeground(e)?49:e}};var P=class t{static fromInt(e){let r=B.fromInt(e);return t.fromHct(r)}static fromHct(e){return new t(e.hue,e.chroma,e)}static fromHueAndChroma(e,r){let n=new Ut(e,r).create();return new t(e,r,n)}constructor(e,r,n){this.hue=e,this.chroma=r,this.keyColor=n,this.cache=new Map}tone(e){let r=this.cache.get(e);return r===void 0&&(r=B.from(this.hue,this.chroma,e).toInt(),this.cache.set(e,r)),r}getHct(e){return B.fromInt(this.tone(e))}},Ut=class{constructor(e,r){this.hue=e,this.requestedChroma=r,this.chromaCache=new Map,this.maxChromaValue=200}create(){let o=0,i=100;for(;o<i;){let s=Math.floor((o+i)/2),c=this.maxChroma(s)<this.maxChroma(s+1);if(this.maxChroma(s)>=this.requestedChroma-.01)if(Math.abs(o-50)<Math.abs(i-50))i=s;else{if(o===s)return B.from(this.hue,this.requestedChroma,o);o=s}else c?o=s+1:i=s}return B.from(this.hue,this.requestedChroma,o)}maxChroma(e){if(this.chromaCache.has(e))return this.chromaCache.get(e);let r=B.from(this.hue,this.maxChromaValue,e).chroma;return this.chromaCache.set(e,r),r}};var k=class{constructor(e,r,n,o){this.low=e,this.normal=r,this.medium=n,this.high=o}get(e){return e<=-1?this.low:e<0?st(this.low,this.normal,(e- -1)/1):e<.5?st(this.normal,this.medium,(e-0)/.5):e<1?st(this.medium,this.high,(e-.5)/.5):this.high}};var U=class{constructor(e,r,n,o,i){this.roleA=e,this.roleB=r,this.delta=n,this.polarity=o,this.stayTogether=i}};var R;(function(t){t[t.MONOCHROME=0]="MONOCHROME",t[t.NEUTRAL=1]="NEUTRAL",t[t.TONAL_SPOT=2]="TONAL_SPOT",t[t.VIBRANT=3]="VIBRANT",t[t.EXPRESSIVE=4]="EXPRESSIVE",t[t.FIDELITY=5]="FIDELITY",t[t.CONTENT=6]="CONTENT",t[t.RAINBOW=7]="RAINBOW",t[t.FRUIT_SALAD=8]="FRUIT_SALAD"})(R||(R={}));function ft(t){return t.variant===R.FIDELITY||t.variant===R.CONTENT}function N(t){return t.variant===R.MONOCHROME}function Ce(t,e,r,n){let o=r,i=B.from(t,e,r);if(i.chroma<e){let s=i.chroma;for(;i.chroma<e;){o+=n?-1:1;let c=B.from(t,e,o);if(s>c.chroma||Math.abs(c.chroma-e)<.4)break;let l=Math.abs(c.chroma-e),u=Math.abs(i.chroma-e);l<u&&(i=c),s=Math.max(s,c.chroma)}}return o}var a=class t{static highestSurface(e){return e.isDark?t.surfaceBright:t.surfaceDim}};a.contentAccentToneDelta=15;a.primaryPaletteKeyColor=b.fromPalette({name:"primary_palette_key_color",palette:t=>t.primaryPalette,tone:t=>t.primaryPalette.keyColor.tone});a.secondaryPaletteKeyColor=b.fromPalette({name:"secondary_palette_key_color",palette:t=>t.secondaryPalette,tone:t=>t.secondaryPalette.keyColor.tone});a.tertiaryPaletteKeyColor=b.fromPalette({name:"tertiary_palette_key_color",palette:t=>t.tertiaryPalette,tone:t=>t.tertiaryPalette.keyColor.tone});a.neutralPaletteKeyColor=b.fromPalette({name:"neutral_palette_key_color",palette:t=>t.neutralPalette,tone:t=>t.neutralPalette.keyColor.tone});a.neutralVariantPaletteKeyColor=b.fromPalette({name:"neutral_variant_palette_key_color",palette:t=>t.neutralVariantPalette,tone:t=>t.neutralVariantPalette.keyColor.tone});a.background=b.fromPalette({name:"background",palette:t=>t.neutralPalette,tone:t=>t.isDark?6:98,isBackground:!0});a.onBackground=b.fromPalette({name:"on_background",palette:t=>t.neutralPalette,tone:t=>t.isDark?90:10,background:t=>a.background,contrastCurve:new k(3,3,4.5,7)});a.surface=b.fromPalette({name:"surface",palette:t=>t.neutralPalette,tone:t=>t.isDark?6:98,isBackground:!0});a.surfaceDim=b.fromPalette({name:"surface_dim",palette:t=>t.neutralPalette,tone:t=>t.isDark?6:new k(87,87,80,75).get(t.contrastLevel),isBackground:!0});a.surfaceBright=b.fromPalette({name:"surface_bright",palette:t=>t.neutralPalette,tone:t=>t.isDark?new k(24,24,29,34).get(t.contrastLevel):98,isBackground:!0});a.surfaceContainerLowest=b.fromPalette({name:"surface_container_lowest",palette:t=>t.neutralPalette,tone:t=>t.isDark?new k(4,4,2,0).get(t.contrastLevel):100,isBackground:!0});a.surfaceContainerLow=b.fromPalette({name:"surface_container_low",palette:t=>t.neutralPalette,tone:t=>t.isDark?new k(10,10,11,12).get(t.contrastLevel):new k(96,96,96,95).get(t.contrastLevel),isBackground:!0});a.surfaceContainer=b.fromPalette({name:"surface_container",palette:t=>t.neutralPalette,tone:t=>t.isDark?new k(12,12,16,20).get(t.contrastLevel):new k(94,94,92,90).get(t.contrastLevel),isBackground:!0});a.surfaceContainerHigh=b.fromPalette({name:"surface_container_high",palette:t=>t.neutralPalette,tone:t=>t.isDark?new k(17,17,21,25).get(t.contrastLevel):new k(92,92,88,85).get(t.contrastLevel),isBackground:!0});a.surfaceContainerHighest=b.fromPalette({name:"surface_container_highest",palette:t=>t.neutralPalette,tone:t=>t.isDark?new k(22,22,26,30).get(t.contrastLevel):new k(90,90,84,80).get(t.contrastLevel),isBackground:!0});a.onSurface=b.fromPalette({name:"on_surface",palette:t=>t.neutralPalette,tone:t=>t.isDark?90:10,background:t=>a.highestSurface(t),contrastCurve:new k(4.5,7,11,21)});a.surfaceVariant=b.fromPalette({name:"surface_variant",palette:t=>t.neutralVariantPalette,tone:t=>t.isDark?30:90,isBackground:!0});a.onSurfaceVariant=b.fromPalette({name:"on_surface_variant",palette:t=>t.neutralVariantPalette,tone:t=>t.isDark?80:30,background:t=>a.highestSurface(t),contrastCurve:new k(3,4.5,7,11)});a.inverseSurface=b.fromPalette({name:"inverse_surface",palette:t=>t.neutralPalette,tone:t=>t.isDark?90:20});a.inverseOnSurface=b.fromPalette({name:"inverse_on_surface",palette:t=>t.neutralPalette,tone:t=>t.isDark?20:95,background:t=>a.inverseSurface,contrastCurve:new k(4.5,7,11,21)});a.outline=b.fromPalette({name:"outline",palette:t=>t.neutralVariantPalette,tone:t=>t.isDark?60:50,background:t=>a.highestSurface(t),contrastCurve:new k(1.5,3,4.5,7)});a.outlineVariant=b.fromPalette({name:"outline_variant",palette:t=>t.neutralVariantPalette,tone:t=>t.isDark?30:80,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5)});a.shadow=b.fromPalette({name:"shadow",palette:t=>t.neutralPalette,tone:t=>0});a.scrim=b.fromPalette({name:"scrim",palette:t=>t.neutralPalette,tone:t=>0});a.surfaceTint=b.fromPalette({name:"surface_tint",palette:t=>t.primaryPalette,tone:t=>t.isDark?80:40,isBackground:!0});a.primary=b.fromPalette({name:"primary",palette:t=>t.primaryPalette,tone:t=>N(t)?t.isDark?100:0:t.isDark?80:40,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(3,4.5,7,7),toneDeltaPair:t=>new U(a.primaryContainer,a.primary,10,"nearer",!1)});a.onPrimary=b.fromPalette({name:"on_primary",palette:t=>t.primaryPalette,tone:t=>N(t)?t.isDark?10:90:t.isDark?20:100,background:t=>a.primary,contrastCurve:new k(4.5,7,11,21)});a.primaryContainer=b.fromPalette({name:"primary_container",palette:t=>t.primaryPalette,tone:t=>ft(t)?t.sourceColorHct.tone:N(t)?t.isDark?85:25:t.isDark?30:90,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.primaryContainer,a.primary,10,"nearer",!1)});a.onPrimaryContainer=b.fromPalette({name:"on_primary_container",palette:t=>t.primaryPalette,tone:t=>ft(t)?b.foregroundTone(a.primaryContainer.tone(t),4.5):N(t)?t.isDark?0:100:t.isDark?90:30,background:t=>a.primaryContainer,contrastCurve:new k(3,4.5,7,11)});a.inversePrimary=b.fromPalette({name:"inverse_primary",palette:t=>t.primaryPalette,tone:t=>t.isDark?40:80,background:t=>a.inverseSurface,contrastCurve:new k(3,4.5,7,7)});a.secondary=b.fromPalette({name:"secondary",palette:t=>t.secondaryPalette,tone:t=>t.isDark?80:40,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(3,4.5,7,7),toneDeltaPair:t=>new U(a.secondaryContainer,a.secondary,10,"nearer",!1)});a.onSecondary=b.fromPalette({name:"on_secondary",palette:t=>t.secondaryPalette,tone:t=>N(t)?t.isDark?10:100:t.isDark?20:100,background:t=>a.secondary,contrastCurve:new k(4.5,7,11,21)});a.secondaryContainer=b.fromPalette({name:"secondary_container",palette:t=>t.secondaryPalette,tone:t=>{let e=t.isDark?30:90;return N(t)?t.isDark?30:85:ft(t)?Ce(t.secondaryPalette.hue,t.secondaryPalette.chroma,e,!t.isDark):e},isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.secondaryContainer,a.secondary,10,"nearer",!1)});a.onSecondaryContainer=b.fromPalette({name:"on_secondary_container",palette:t=>t.secondaryPalette,tone:t=>N(t)?t.isDark?90:10:ft(t)?b.foregroundTone(a.secondaryContainer.tone(t),4.5):t.isDark?90:30,background:t=>a.secondaryContainer,contrastCurve:new k(3,4.5,7,11)});a.tertiary=b.fromPalette({name:"tertiary",palette:t=>t.tertiaryPalette,tone:t=>N(t)?t.isDark?90:25:t.isDark?80:40,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(3,4.5,7,7),toneDeltaPair:t=>new U(a.tertiaryContainer,a.tertiary,10,"nearer",!1)});a.onTertiary=b.fromPalette({name:"on_tertiary",palette:t=>t.tertiaryPalette,tone:t=>N(t)?t.isDark?10:90:t.isDark?20:100,background:t=>a.tertiary,contrastCurve:new k(4.5,7,11,21)});a.tertiaryContainer=b.fromPalette({name:"tertiary_container",palette:t=>t.tertiaryPalette,tone:t=>{if(N(t))return t.isDark?60:49;if(!ft(t))return t.isDark?30:90;let e=t.tertiaryPalette.getHct(t.sourceColorHct.tone);return ot.fixIfDisliked(e).tone},isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.tertiaryContainer,a.tertiary,10,"nearer",!1)});a.onTertiaryContainer=b.fromPalette({name:"on_tertiary_container",palette:t=>t.tertiaryPalette,tone:t=>N(t)?t.isDark?0:100:ft(t)?b.foregroundTone(a.tertiaryContainer.tone(t),4.5):t.isDark?90:30,background:t=>a.tertiaryContainer,contrastCurve:new k(3,4.5,7,11)});a.error=b.fromPalette({name:"error",palette:t=>t.errorPalette,tone:t=>t.isDark?80:40,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(3,4.5,7,7),toneDeltaPair:t=>new U(a.errorContainer,a.error,10,"nearer",!1)});a.onError=b.fromPalette({name:"on_error",palette:t=>t.errorPalette,tone:t=>t.isDark?20:100,background:t=>a.error,contrastCurve:new k(4.5,7,11,21)});a.errorContainer=b.fromPalette({name:"error_container",palette:t=>t.errorPalette,tone:t=>t.isDark?30:90,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.errorContainer,a.error,10,"nearer",!1)});a.onErrorContainer=b.fromPalette({name:"on_error_container",palette:t=>t.errorPalette,tone:t=>N(t)?t.isDark?90:10:t.isDark?90:30,background:t=>a.errorContainer,contrastCurve:new k(3,4.5,7,11)});a.primaryFixed=b.fromPalette({name:"primary_fixed",palette:t=>t.primaryPalette,tone:t=>N(t)?40:90,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.primaryFixed,a.primaryFixedDim,10,"lighter",!0)});a.primaryFixedDim=b.fromPalette({name:"primary_fixed_dim",palette:t=>t.primaryPalette,tone:t=>N(t)?30:80,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.primaryFixed,a.primaryFixedDim,10,"lighter",!0)});a.onPrimaryFixed=b.fromPalette({name:"on_primary_fixed",palette:t=>t.primaryPalette,tone:t=>N(t)?100:10,background:t=>a.primaryFixedDim,secondBackground:t=>a.primaryFixed,contrastCurve:new k(4.5,7,11,21)});a.onPrimaryFixedVariant=b.fromPalette({name:"on_primary_fixed_variant",palette:t=>t.primaryPalette,tone:t=>N(t)?90:30,background:t=>a.primaryFixedDim,secondBackground:t=>a.primaryFixed,contrastCurve:new k(3,4.5,7,11)});a.secondaryFixed=b.fromPalette({name:"secondary_fixed",palette:t=>t.secondaryPalette,tone:t=>N(t)?80:90,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.secondaryFixed,a.secondaryFixedDim,10,"lighter",!0)});a.secondaryFixedDim=b.fromPalette({name:"secondary_fixed_dim",palette:t=>t.secondaryPalette,tone:t=>N(t)?70:80,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.secondaryFixed,a.secondaryFixedDim,10,"lighter",!0)});a.onSecondaryFixed=b.fromPalette({name:"on_secondary_fixed",palette:t=>t.secondaryPalette,tone:t=>10,background:t=>a.secondaryFixedDim,secondBackground:t=>a.secondaryFixed,contrastCurve:new k(4.5,7,11,21)});a.onSecondaryFixedVariant=b.fromPalette({name:"on_secondary_fixed_variant",palette:t=>t.secondaryPalette,tone:t=>N(t)?25:30,background:t=>a.secondaryFixedDim,secondBackground:t=>a.secondaryFixed,contrastCurve:new k(3,4.5,7,11)});a.tertiaryFixed=b.fromPalette({name:"tertiary_fixed",palette:t=>t.tertiaryPalette,tone:t=>N(t)?40:90,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.tertiaryFixed,a.tertiaryFixedDim,10,"lighter",!0)});a.tertiaryFixedDim=b.fromPalette({name:"tertiary_fixed_dim",palette:t=>t.tertiaryPalette,tone:t=>N(t)?30:80,isBackground:!0,background:t=>a.highestSurface(t),contrastCurve:new k(1,1,3,4.5),toneDeltaPair:t=>new U(a.tertiaryFixed,a.tertiaryFixedDim,10,"lighter",!0)});a.onTertiaryFixed=b.fromPalette({name:"on_tertiary_fixed",palette:t=>t.tertiaryPalette,tone:t=>N(t)?100:10,background:t=>a.tertiaryFixedDim,secondBackground:t=>a.tertiaryFixed,contrastCurve:new k(4.5,7,11,21)});a.onTertiaryFixedVariant=b.fromPalette({name:"on_tertiary_fixed_variant",palette:t=>t.tertiaryPalette,tone:t=>N(t)?90:30,background:t=>a.tertiaryFixedDim,secondBackground:t=>a.tertiaryFixed,contrastCurve:new k(3,4.5,7,11)});var O=class{constructor(e){this.sourceColorArgb=e.sourceColorArgb,this.variant=e.variant,this.contrastLevel=e.contrastLevel,this.isDark=e.isDark,this.sourceColorHct=B.fromInt(e.sourceColorArgb),this.primaryPalette=e.primaryPalette,this.secondaryPalette=e.secondaryPalette,this.tertiaryPalette=e.tertiaryPalette,this.neutralPalette=e.neutralPalette,this.neutralVariantPalette=e.neutralVariantPalette,this.errorPalette=P.fromHueAndChroma(25,84)}static getRotatedHue(e,r,n){let o=e.hue;if(r.length!==n.length)throw new Error(`mismatch between hue length ${r.length} & rotations ${n.length}`);if(n.length===1)return z(e.hue+n[0]);let i=r.length;for(let s=0;s<=i-2;s++){let c=r[s],l=r[s+1];if(c<o&&o<l)return z(o+n[s])}return o}getArgb(e){return e.getArgb(this)}getHct(e){return e.getHct(this)}get primaryPaletteKeyColor(){return this.getArgb(a.primaryPaletteKeyColor)}get secondaryPaletteKeyColor(){return this.getArgb(a.secondaryPaletteKeyColor)}get tertiaryPaletteKeyColor(){return this.getArgb(a.tertiaryPaletteKeyColor)}get neutralPaletteKeyColor(){return this.getArgb(a.neutralPaletteKeyColor)}get neutralVariantPaletteKeyColor(){return this.getArgb(a.neutralVariantPaletteKeyColor)}get background(){return this.getArgb(a.background)}get onBackground(){return this.getArgb(a.onBackground)}get surface(){return this.getArgb(a.surface)}get surfaceDim(){return this.getArgb(a.surfaceDim)}get surfaceBright(){return this.getArgb(a.surfaceBright)}get surfaceContainerLowest(){return this.getArgb(a.surfaceContainerLowest)}get surfaceContainerLow(){return this.getArgb(a.surfaceContainerLow)}get surfaceContainer(){return this.getArgb(a.surfaceContainer)}get surfaceContainerHigh(){return this.getArgb(a.surfaceContainerHigh)}get surfaceContainerHighest(){return this.getArgb(a.surfaceContainerHighest)}get onSurface(){return this.getArgb(a.onSurface)}get surfaceVariant(){return this.getArgb(a.surfaceVariant)}get onSurfaceVariant(){return this.getArgb(a.onSurfaceVariant)}get inverseSurface(){return this.getArgb(a.inverseSurface)}get inverseOnSurface(){return this.getArgb(a.inverseOnSurface)}get outline(){return this.getArgb(a.outline)}get outlineVariant(){return this.getArgb(a.outlineVariant)}get shadow(){return this.getArgb(a.shadow)}get scrim(){return this.getArgb(a.scrim)}get surfaceTint(){return this.getArgb(a.surfaceTint)}get primary(){return this.getArgb(a.primary)}get onPrimary(){return this.getArgb(a.onPrimary)}get primaryContainer(){return this.getArgb(a.primaryContainer)}get onPrimaryContainer(){return this.getArgb(a.onPrimaryContainer)}get inversePrimary(){return this.getArgb(a.inversePrimary)}get secondary(){return this.getArgb(a.secondary)}get onSecondary(){return this.getArgb(a.onSecondary)}get secondaryContainer(){return this.getArgb(a.secondaryContainer)}get onSecondaryContainer(){return this.getArgb(a.onSecondaryContainer)}get tertiary(){return this.getArgb(a.tertiary)}get onTertiary(){return this.getArgb(a.onTertiary)}get tertiaryContainer(){return this.getArgb(a.tertiaryContainer)}get onTertiaryContainer(){return this.getArgb(a.onTertiaryContainer)}get error(){return this.getArgb(a.error)}get onError(){return this.getArgb(a.onError)}get errorContainer(){return this.getArgb(a.errorContainer)}get onErrorContainer(){return this.getArgb(a.onErrorContainer)}get primaryFixed(){return this.getArgb(a.primaryFixed)}get primaryFixedDim(){return this.getArgb(a.primaryFixedDim)}get onPrimaryFixed(){return this.getArgb(a.onPrimaryFixed)}get onPrimaryFixedVariant(){return this.getArgb(a.onPrimaryFixedVariant)}get secondaryFixed(){return this.getArgb(a.secondaryFixed)}get secondaryFixedDim(){return this.getArgb(a.secondaryFixedDim)}get onSecondaryFixed(){return this.getArgb(a.onSecondaryFixed)}get onSecondaryFixedVariant(){return this.getArgb(a.onSecondaryFixedVariant)}get tertiaryFixed(){return this.getArgb(a.tertiaryFixed)}get tertiaryFixedDim(){return this.getArgb(a.tertiaryFixedDim)}get onTertiaryFixed(){return this.getArgb(a.onTertiaryFixed)}get onTertiaryFixedVariant(){return this.getArgb(a.onTertiaryFixedVariant)}};var dt=class t{constructor(e){this.input=e,this.hctsByTempCache=[],this.hctsByHueCache=[],this.tempsByHctCache=new Map,this.inputRelativeTemperatureCache=-1,this.complementCache=null}get hctsByTemp(){if(this.hctsByTempCache.length>0)return this.hctsByTempCache;let e=this.hctsByHue.concat([this.input]),r=this.tempsByHct;return e.sort((n,o)=>r.get(n)-r.get(o)),this.hctsByTempCache=e,e}get warmest(){return this.hctsByTemp[this.hctsByTemp.length-1]}get coldest(){return this.hctsByTemp[0]}analogous(e=5,r=12){let n=Math.round(this.input.hue),o=this.hctsByHue[n],i=this.relativeTemperature(o),s=[o],c=0;for(let f=0;f<360;f++){let h=ht(n+f),C=this.hctsByHue[h],x=this.relativeTemperature(C),T=Math.abs(x-i);i=x,c+=T}let l=1,u=c/r,m=0;for(i=this.relativeTemperature(o);s.length<r;){let f=ht(n+l),h=this.hctsByHue[f],C=this.relativeTemperature(h),x=Math.abs(C-i);m+=x;let T=s.length*u,g=m>=T,M=1;for(;g&&s.length<r;){s.push(h);let w=(s.length+M)*u;g=m>=w,M++}if(i=C,l++,l>360){for(;s.length<r;)s.push(h);break}}let d=[this.input],y=Math.floor((e-1)/2);for(let f=1;f<y+1;f++){let h=0-f;for(;h<0;)h=s.length+h;h>=s.length&&(h=h%s.length),d.splice(0,0,s[h])}let p=e-y-1;for(let f=1;f<p+1;f++){let h=f;for(;h<0;)h=s.length+h;h>=s.length&&(h=h%s.length),d.push(s[h])}return d}get complement(){if(this.complementCache!=null)return this.complementCache;let e=this.coldest.hue,r=this.tempsByHct.get(this.coldest),n=this.warmest.hue,i=this.tempsByHct.get(this.warmest)-r,s=t.isBetween(this.input.hue,e,n),c=s?n:e,l=s?e:n,u=1,m=1e3,d=this.hctsByHue[Math.round(this.input.hue)],y=1-this.inputRelativeTemperature;for(let p=0;p<=360;p+=1){let f=z(c+u*p);if(!t.isBetween(f,c,l))continue;let h=this.hctsByHue[Math.round(f)],C=(this.tempsByHct.get(h)-r)/i,x=Math.abs(y-C);x<m&&(m=x,d=h)}return this.complementCache=d,this.complementCache}relativeTemperature(e){let r=this.tempsByHct.get(this.warmest)-this.tempsByHct.get(this.coldest),n=this.tempsByHct.get(e)-this.tempsByHct.get(this.coldest);return r===0?.5:n/r}get inputRelativeTemperature(){return this.inputRelativeTemperatureCache>=0?this.inputRelativeTemperatureCache:(this.inputRelativeTemperatureCache=this.relativeTemperature(this.input),this.inputRelativeTemperatureCache)}get tempsByHct(){if(this.tempsByHctCache.size>0)return this.tempsByHctCache;let e=this.hctsByHue.concat([this.input]),r=new Map;for(let n of e)r.set(n,t.rawTemperature(n));return this.tempsByHctCache=r,r}get hctsByHue(){if(this.hctsByHueCache.length>0)return this.hctsByHueCache;let e=[];for(let r=0;r<=360;r+=1){let n=B.from(r,this.input.chroma,this.input.tone);e.push(n)}return this.hctsByHueCache=e,this.hctsByHueCache}static isBetween(e,r,n){return r<n?r<=e&&e<=n:r<=e||e<=n}static rawTemperature(e){let r=zt(e.toInt()),n=z(Math.atan2(r[2],r[1])*180/Math.PI),o=Math.sqrt(r[1]*r[1]+r[2]*r[2]);return-.5+.02*Math.pow(o,1.07)*Math.cos(z(n-50)*Math.PI/180)}};var St=class extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.CONTENT,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(e.hue,e.chroma),secondaryPalette:P.fromHueAndChroma(e.hue,Math.max(e.chroma-32,e.chroma*.5)),tertiaryPalette:P.fromInt(ot.fixIfDisliked(new dt(e).analogous(3,6)[2]).toInt()),neutralPalette:P.fromHueAndChroma(e.hue,e.chroma/8),neutralVariantPalette:P.fromHueAndChroma(e.hue,e.chroma/8+4)})}};var ct=class t extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.EXPRESSIVE,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(z(e.hue+240),40),secondaryPalette:P.fromHueAndChroma(O.getRotatedHue(e,t.hues,t.secondaryRotations),24),tertiaryPalette:P.fromHueAndChroma(O.getRotatedHue(e,t.hues,t.tertiaryRotations),32),neutralPalette:P.fromHueAndChroma(e.hue+15,8),neutralVariantPalette:P.fromHueAndChroma(e.hue+15,12)})}};ct.hues=[0,21,51,121,151,191,271,321,360];ct.secondaryRotations=[45,95,45,20,45,90,45,45,45];ct.tertiaryRotations=[120,120,20,45,20,15,20,120,120];var Mt=class extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.FIDELITY,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(e.hue,e.chroma),secondaryPalette:P.fromHueAndChroma(e.hue,Math.max(e.chroma-32,e.chroma*.5)),tertiaryPalette:P.fromInt(ot.fixIfDisliked(new dt(e).complement).toInt()),neutralPalette:P.fromHueAndChroma(e.hue,e.chroma/8),neutralVariantPalette:P.fromHueAndChroma(e.hue,e.chroma/8+4)})}};var vt=class extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.FRUIT_SALAD,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(z(e.hue-50),48),secondaryPalette:P.fromHueAndChroma(z(e.hue-50),36),tertiaryPalette:P.fromHueAndChroma(e.hue,36),neutralPalette:P.fromHueAndChroma(e.hue,10),neutralVariantPalette:P.fromHueAndChroma(e.hue,16)})}};var Dt=class extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.MONOCHROME,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(e.hue,0),secondaryPalette:P.fromHueAndChroma(e.hue,0),tertiaryPalette:P.fromHueAndChroma(e.hue,0),neutralPalette:P.fromHueAndChroma(e.hue,0),neutralVariantPalette:P.fromHueAndChroma(e.hue,0)})}};var Et=class extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.NEUTRAL,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(e.hue,12),secondaryPalette:P.fromHueAndChroma(e.hue,8),tertiaryPalette:P.fromHueAndChroma(e.hue,16),neutralPalette:P.fromHueAndChroma(e.hue,2),neutralVariantPalette:P.fromHueAndChroma(e.hue,2)})}};var Ft=class extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.RAINBOW,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(e.hue,48),secondaryPalette:P.fromHueAndChroma(e.hue,16),tertiaryPalette:P.fromHueAndChroma(z(e.hue+60),24),neutralPalette:P.fromHueAndChroma(e.hue,0),neutralVariantPalette:P.fromHueAndChroma(e.hue,0)})}};var Lt=class extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.TONAL_SPOT,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(e.hue,36),secondaryPalette:P.fromHueAndChroma(e.hue,16),tertiaryPalette:P.fromHueAndChroma(z(e.hue+60),24),neutralPalette:P.fromHueAndChroma(e.hue,6),neutralVariantPalette:P.fromHueAndChroma(e.hue,8)})}};var lt=class t extends O{constructor(e,r,n){super({sourceColorArgb:e.toInt(),variant:R.VIBRANT,contrastLevel:n,isDark:r,primaryPalette:P.fromHueAndChroma(e.hue,200),secondaryPalette:P.fromHueAndChroma(O.getRotatedHue(e,t.hues,t.secondaryRotations),24),tertiaryPalette:P.fromHueAndChroma(O.getRotatedHue(e,t.hues,t.tertiaryRotations),32),neutralPalette:P.fromHueAndChroma(e.hue,10),neutralVariantPalette:P.fromHueAndChroma(e.hue,12)})}};lt.hues=[0,41,61,101,131,181,251,301,360];lt.secondaryRotations=[18,15,10,12,15,18,15,12,12];lt.tertiaryRotations=[35,30,20,25,30,35,30,25,25];var ke={desired:4,fallbackColorARGB:4282549748,filter:!0};function Te(t,e){return t.score>e.score?-1:t.score<e.score?1:0}var nt=class t{constructor(){}static score(e,r){let{desired:n,fallbackColorARGB:o,filter:i}={...ke,...r},s=[],c=new Array(360).fill(0),l=0;for(let[p,f]of e.entries()){let h=B.fromInt(p);s.push(h);let C=Math.floor(h.hue);c[C]+=f,l+=f}let u=new Array(360).fill(0);for(let p=0;p<360;p++){let f=c[p]/l;for(let h=p-14;h<p+16;h++){let C=ht(h);u[C]+=f}}let m=new Array;for(let p of s){let f=ht(Math.round(p.hue)),h=u[f];if(i&&(p.chroma<t.CUTOFF_CHROMA||h<=t.CUTOFF_EXCITED_PROPORTION))continue;let C=h*100*t.WEIGHT_PROPORTION,x=p.chroma<t.TARGET_CHROMA?t.WEIGHT_CHROMA_BELOW:t.WEIGHT_CHROMA_ABOVE,T=(p.chroma-t.TARGET_CHROMA)*x,g=C+T;m.push({hct:p,score:g})}m.sort(Te);let d=[];for(let p=90;p>=15;p--){d.length=0;for(let{hct:f}of m)if(d.find(C=>Nt(f.hue,C.hue)<p)||d.push(f),d.length>=n)break;if(d.length>=n)break}let y=[];d.length===0&&y.push(o);for(let p of d)y.push(p.toInt());return y}};nt.TARGET_CHROMA=48;nt.WEIGHT_PROPORTION=.7;nt.WEIGHT_CHROMA_ABOVE=.3;nt.WEIGHT_CHROMA_BELOW=.1;nt.CUTOFF_CHROMA=5;nt.CUTOFF_EXCITED_PROPORTION=.01;function _t(t){let e=bt(t),r=xt(t),n=Pt(t),o=[e.toString(16),r.toString(16),n.toString(16)];for(let[i,s]of o.entries())s.length===1&&(o[i]="0"+s);return"#"+o.join("")}function ae(t){t=t.replace("#","");let e=t.length===3,r=t.length===6,n=t.length===8;if(!e&&!r&&!n)throw new Error("unexpected hex "+t);let o=0,i=0,s=0;return e?(o=at(t.slice(0,1).repeat(2)),i=at(t.slice(1,2).repeat(2)),s=at(t.slice(2,3).repeat(2))):r?(o=at(t.slice(0,2)),i=at(t.slice(2,4)),s=at(t.slice(4,6))):n&&(o=at(t.slice(2,4)),i=at(t.slice(4,6)),s=at(t.slice(6,8))),(255<<24|(o&255)<<16|(i&255)<<8|s&255)>>>0}function at(t){return parseInt(t,16)}var pt={"tonal-spot":{label:"Tonal spot",Scheme:Lt},vibrant:{label:"Vibrant",Scheme:lt},expressive:{label:"Expressive",Scheme:ct},neutral:{label:"Neutral",Scheme:Et},monochrome:{label:"Monochrome",Scheme:Dt},fidelity:{label:"Fidelity",Scheme:Mt},content:{label:"Content",Scheme:St},"fruit-salad":{label:"Fruit salad",Scheme:vt},rainbow:{label:"Rainbow",Scheme:Ft}},we=["artwork","static","custom"],Gt=["dark","light","auto"],tt=Object.freeze({source:"artwork",variant:"tonal-spot",mode:"dark",contrast:0,seed:"#d0bcff"}),Bt=["background","on-background","surface","surface-dim","surface-bright","surface-container-lowest","surface-container-low","surface-container","surface-container-high","surface-container-highest","on-surface","surface-variant","on-surface-variant","inverse-surface","inverse-on-surface","outline","outline-variant","shadow","scrim","surface-tint","primary","on-primary","primary-container","on-primary-container","inverse-primary","secondary","on-secondary","secondary-container","on-secondary-container","tertiary","on-tertiary","tertiary-container","on-tertiary-container","error","on-error","error-container","on-error-container","primary-fixed","primary-fixed-dim","on-primary-fixed","on-primary-fixed-variant","secondary-fixed","secondary-fixed-dim","on-secondary-fixed","on-secondary-fixed-variant","tertiary-fixed","tertiary-fixed-dim","on-tertiary-fixed","on-tertiary-fixed-variant"],Ie=t=>t.replace(/-([a-z])/g,(e,r)=>r.toUpperCase()),Se=/^#[0-9a-f]{6}$/i,Ct=t=>typeof t=="string"&&Se.test(t);function $t(t,e={}){let{variant:r=tt.variant,dark:n=!0,contrast:o=0}=e,i=Ct(t)?t:tt.seed,{Scheme:s}=pt[Object.hasOwn(pt,r)?r:tt.variant],c=new s(B.fromInt(ae(i)),!!n,Math.max(-1,Math.min(1,Number(o)||0))),l={};for(let u of Bt)l[u]=_t(a[Ie(u)].getArgb(c));return l}var qt=t=>[1,3,5].map(e=>parseInt(t.slice(e,e+2),16)),oe=t=>qt(t).join(", ");function Me(t,e,r){let[n,o,i]=qt(t),[s,c,l]=qt(e),u=(d,y)=>Math.round(d+(y-d)*r),m=d=>d.toString(16).padStart(2,"0");return`#${m(u(n,s))}${m(u(o,c))}${m(u(i,l))}`}function se(t){return{text:t["on-surface"],subtext:t["on-surface-variant"],main:t.surface,"main-elevated":t["surface-container"],highlight:t["surface-container-highest"],"highlight-elevated":Me(t["surface-container-highest"],t["on-surface"],.06),sidebar:t["surface-container-low"],player:t["surface-container"],card:t["surface-container-high"],shadow:"#000000","selected-row":t["primary-container"],button:t.primary,"button-active":t["on-primary-container"],"button-disabled":t["outline-variant"],"tab-active":t["secondary-container"],notification:t.primary,"notification-error":t.error,equalizer:t.primary,misc:t.outline}}var ve=["VIBRANT_NON_ALARMING","VIBRANT","PROMINENT","LIGHT_VIBRANT","DARK_VIBRANT","DESATURATED"];function ie(t){if(!t||typeof t!="object")return null;for(let e of ve){let r=t[e];if(Ct(r))return r.toLowerCase()}return null}function Rt(t){let e=t&&typeof t=="object"?t:{},r=Number(e.contrast);return{source:we.includes(e.source)?e.source:tt.source,variant:Object.hasOwn(pt,e.variant)?e.variant:tt.variant,mode:Gt.includes(e.mode)?e.mode:tt.mode,contrast:Number.isFinite(r)?Math.max(-1,Math.min(1,r)):tt.contrast,seed:Ct(e.seed)?e.seed.toLowerCase():tt.seed}}var De=`
 #luma-ambient-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);opacity:0;z-index:1000002;pointer-events:none;padding:10px 14px;border-radius:var(--md-shape-full,999px);background:color-mix(in srgb,var(--md-surface-container-high,#211f26) 92%,transparent);color:var(--md-on-surface,#f3edf7);border:1px solid color-mix(in srgb,var(--md-primary,#d0bcff) 25%,transparent);font:600 13px/1.2 var(--md-font,Inter);box-shadow:var(--md-elevation-2,0 2px 6px rgb(0 0 0 / 15%));backdrop-filter:blur(14px);transition:opacity .18s ease,transform .18s ease}
 #luma-ambient-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #luma-ambient-scrim{position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;background:var(--md-scrim,rgb(0 0 0 / 60%));opacity:0;transition:opacity .18s ease}
 #luma-ambient-scrim.show{opacity:1}
-#luma-ambient-scrim .luma-setup{width:min(380px,calc(100vw - 48px));padding:24px 24px 20px;border-radius:var(--md-shape-lg,16px);background:var(--md-surface-container,#1d1b20);border:1px solid var(--md-outline-variant,color-mix(in srgb,var(--md-on-surface,#f3edf7) 14%,transparent));box-shadow:var(--md-elevation-3,0 4px 8px rgb(0 0 0 / 15%));color:var(--md-on-surface,#f3edf7);font-family:var(--md-font,Inter);transform:translateY(8px) scale(.98);transition:transform .18s ease}
+#luma-ambient-scrim .luma-setup{width:min(380px,calc(100vw - 48px));max-height:calc(100vh - 48px);overflow:auto;padding:24px 24px 20px;border-radius:var(--md-shape-lg,16px);background:var(--md-surface-container,#1d1b20);border:1px solid var(--md-outline-variant,color-mix(in srgb,var(--md-on-surface,#f3edf7) 14%,transparent));box-shadow:var(--md-elevation-3,0 4px 8px rgb(0 0 0 / 15%));color:var(--md-on-surface,#f3edf7);font-family:var(--md-font,Inter);transform:translateY(8px) scale(.98);transition:transform .18s ease}
 #luma-ambient-scrim.show .luma-setup{transform:none}
 #luma-ambient-scrim h2{margin:0 0 8px;font-size:15px;font-weight:650;letter-spacing:-.02em}
 #luma-ambient-scrim p{margin:0 0 18px;font-size:13px;line-height:1.55;color:var(--md-on-surface-variant,#cac4d0)}
@@ -214,189 +16,151 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
 #luma-ambient-scrim .luma-setup-yes:hover{filter:brightness(1.08)}
 #luma-ambient-scrim .luma-setup-no{border:1px solid color-mix(in srgb,var(--md-on-surface,#f3edf7) 22%,transparent);background:transparent;color:var(--md-on-surface,#f3edf7);font-weight:500}
 #luma-ambient-scrim .luma-setup-no:hover{background:var(--md-state-hover,color-mix(in srgb,var(--md-primary,#d0bcff) 8%,transparent))}
-#luma-ambient-scrim :where(button):focus-visible{outline:2px solid var(--md-primary,#d0bcff);outline-offset:2px}
+#luma-ambient-scrim .luma-field{display:grid;gap:6px;margin:0 0 14px}
+#luma-ambient-scrim .luma-field[hidden]{display:none}
+#luma-ambient-scrim .luma-field>label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--md-on-surface-variant,#cac4d0)}
+#luma-ambient-scrim .luma-field select{width:100%;padding:9px 10px;border-radius:var(--md-shape-sm,8px);border:1px solid var(--md-outline,#575260);background:var(--md-surface-container-highest,#2b2930);color:var(--md-on-surface,#f3edf7);font:500 13px/1.2 var(--md-font,Inter)}
+#luma-ambient-scrim .luma-field input[type=color]{width:100%;height:38px;padding:3px;border-radius:var(--md-shape-sm,8px);border:1px solid var(--md-outline,#575260);background:var(--md-surface-container-highest,#2b2930);cursor:pointer}
+#luma-ambient-scrim .luma-field input[type=range]{width:100%;accent-color:var(--md-primary,#d0bcff)}
+#luma-ambient-scrim .luma-field output{font-size:12px;color:var(--md-on-surface-variant,#cac4d0)}
+#luma-ambient-scrim .luma-swatches{display:flex;gap:6px;margin:0 0 18px}
+#luma-ambient-scrim .luma-swatches span{flex:1;height:22px;border-radius:var(--md-shape-xs,4px);border:1px solid var(--md-outline-variant,#36323c)}
+#luma-ambient-scrim :where(button,select,input):focus-visible{outline:2px solid var(--md-primary,#d0bcff);outline-offset:2px}
 @media (prefers-reduced-motion: reduce) {
   #luma-ambient-scrim,#luma-ambient-scrim .luma-setup,#luma-ambient-toast{transition:none}
 }
-`;
+`,ce=!1;function ue(){if(ce)return;ce=!0;let t=document.createElement("style");t.id="luma-ambient-setup-ui",t.textContent=De,document.head.append(t)}var le=0;function Ot(t){ue();let e=document.getElementById("luma-ambient-toast");e||(e=document.createElement("div"),e.id="luma-ambient-toast",document.body.append(e)),e.textContent=t,e.classList.add("show"),clearTimeout(le),le=setTimeout(()=>e.classList.remove("show"),2400)}function Ht(t,e){if(ue(),document.getElementById("luma-ambient-scrim"))return null;let r=document.activeElement,n=document.createElement("div");n.id="luma-ambient-scrim";let o=document.createElement("div");o.className="luma-setup",o.setAttribute("role","dialog"),o.setAttribute("aria-modal","true"),o.setAttribute("aria-label",t),n.append(o);let i=c=>{c.key==="Escape"&&(c.stopPropagation(),s())};function s(){n.classList.remove("show");let c=()=>n.remove();n.addEventListener("transitionend",c,{once:!0}),setTimeout(c,400),document.removeEventListener("keydown",i,!0),r?.focus?.()}return n.addEventListener("click",c=>{c.target===n&&s()}),document.body.append(n),requestAnimationFrame(()=>n.classList.add("show")),document.addEventListener("keydown",i,!0),e(o,s),s}var fe="luma-ambient-palette",jt="luma-ambient-last-seed",Ee="500ms cubic-bezier(0.2, 0, 0, 1)",me=new Set(["scrim","shadow"]),Yt=t=>{try{return localStorage.getItem(t)}catch{return null}},he=(t,e)=>{try{localStorage.setItem(t,e)}catch{}};function Fe(){try{return Rt(JSON.parse(Yt(fe)||"null"))}catch{return Rt(null)}}function de(){let t=document.documentElement,e=new Set,r=globalThis.matchMedia?.("(prefers-color-scheme: light)"),n=Fe(),o=Ct(Yt(jt))?Yt(jt):tt.seed,i=0,s=!1,c=!1,l=()=>n.mode==="dark"||n.mode==="auto"&&!r?.matches;function u(x,T){t.style.setProperty(x,T),e.add(x)}function m(){for(let x of e)t.style.removeProperty(x);e.clear(),t.style.removeProperty("color-scheme"),delete t.dataset.lumaPalette}function d(x){let T=l(),g=$t(x,{variant:n.variant,dark:T,contrast:n.contrast});for(let M of Bt)me.has(M)||u(`--md-${M}`,g[M]);u("--md-scrim",`color-mix(in srgb, ${g.scrim} 60%, transparent)`);for(let[M,w]of Object.entries(se(g)))u(`--spice-${M}`,w),u(`--spice-rgb-${M}`,oe(w));t.style.setProperty("color-scheme",T?"dark":"light"),t.dataset.lumaPalette=`${n.variant}-${T?"dark":"light"}`,c||(c=!0,requestAnimationFrame(()=>requestAnimationFrame(y)))}function y(){if(s)return;s=!0;let x=Bt.filter(g=>!me.has(g)).map(g=>`--md-${g}`);for(let g of x)try{CSS.registerProperty({name:g,syntax:"<color>",inherits:!0,initialValue:"#000000"})}catch{}let T=document.createElement("style");T.id="luma-ambient-palette-motion",T.textContent=`:root{transition:${x.map(g=>`${g} ${Ee}`).join(",")}}
+@media (prefers-reduced-motion: reduce){:root{transition:none}}`,document.head.append(T)}async function p(){try{let x=globalThis.Spicetify?.Player?.data?.item?.uri;return!x||!globalThis.Spicetify?.colorExtractor?null:ie(await globalThis.Spicetify.colorExtractor(x))}catch{return null}}async function f(){let x=++i;if(n.source==="static"){m();return}let T=n.seed;if(n.source==="artwork"){let g=await p();if(x!==i)return;g&&(o=g,he(jt,g)),T=o}d(T)}function h(x){let T=n.source;return n=Rt({...n,...x}),he(fe,JSON.stringify(n)),T!=="static"&&n.source==="static"&&m(),f()}function C(){return Ht("Luma Ambient palette",(x,T)=>{let g=(A,V,Y)=>`<option value="${A}"${Y?" selected":""}>${V}</option>`;x.innerHTML=`
+<h2>Palette</h2>
+<p>Choose how Luma Ambient picks its Material You colors. Changes apply immediately.</p>
+<div class="luma-swatches" aria-hidden="true"></div>
+<div class="luma-field"><label for="luma-pal-source">Color source</label>
+  <select id="luma-pal-source">
+    ${g("artwork","Album artwork",n.source==="artwork")}
+    ${g("custom","Custom color",n.source==="custom")}
+    ${g("static","Theme scheme only (color.ini)",n.source==="static")}
+  </select></div>
+<div class="luma-field" data-for="custom"><label for="luma-pal-seed">Custom color</label>
+  <input id="luma-pal-seed" type="color" value="${n.seed}"></div>
+<div class="luma-field" data-for="generated"><label for="luma-pal-variant">Style</label>
+  <select id="luma-pal-variant">
+    ${Object.entries(pt).map(([A,{label:V}])=>g(A,V,n.variant===A)).join("")}
+  </select></div>
+<div class="luma-field" data-for="generated"><label for="luma-pal-mode">Appearance</label>
+  <select id="luma-pal-mode">
+    ${Gt.map(A=>g(A,{dark:"Dark",light:"Light",auto:"Match system"}[A],n.mode===A)).join("")}
+  </select></div>
+<div class="luma-field" data-for="generated"><label for="luma-pal-contrast">Contrast</label>
+  <input id="luma-pal-contrast" type="range" min="-1" max="1" step="0.25" value="${n.contrast}">
+  <output id="luma-pal-contrast-out"></output></div>
+<div class="luma-setup-actions"><button type="button" class="luma-setup-yes">Done</button></div>`;let M=A=>x.querySelector(`#luma-pal-${A}`),w=x.querySelector(".luma-swatches"),H=A=>A===0?"Standard":A<0?"Reduced":A<1?"Medium":"High";function v(){let A=n.source!=="static";x.querySelector('[data-for="custom"]').hidden=n.source!=="custom";for(let V of x.querySelectorAll('[data-for="generated"]'))V.hidden=!A;if(M("contrast-out").textContent=H(n.contrast),w.hidden=!A,A){let V=n.source==="custom"?n.seed:o,Y=$t(V,{variant:n.variant,dark:l(),contrast:n.contrast});w.replaceChildren(...["primary","secondary","tertiary","primary-container","surface-container-high"].map(G=>{let _=document.createElement("span");return _.style.background=Y[G],_}))}}let L=0,E=A=>{clearTimeout(L),L=setTimeout(()=>{h(A),v()},60)};M("source").addEventListener("change",A=>E({source:A.target.value})),M("seed").addEventListener("input",A=>E({seed:A.target.value})),M("variant").addEventListener("change",A=>E({variant:A.target.value})),M("mode").addEventListener("change",A=>E({mode:A.target.value})),M("contrast").addEventListener("input",A=>E({contrast:Number(A.target.value)})),x.querySelector(".luma-setup-yes").addEventListener("click",T),v(),M("source").focus()})}globalThis.Spicetify?.Player?.addEventListener?.("songchange",f),r?.addEventListener?.("change",()=>{n.mode==="auto"&&f()});try{new globalThis.Spicetify.Menu.Item("Luma Ambient palette",!1,()=>C()).register()}catch{}return f(),{get:()=>({...n}),set:h,refresh:f,open:C,reset:()=>h({...tt}),variants:()=>Object.keys(pt)}}(async function t(){let e=I=>new Promise(S=>setTimeout(S,I));for(;!(globalThis.Spicetify&&document.body);){setTimeout(t,10);return}if(globalThis.__lumaAmbientThemeLoaded)return;globalThis.__lumaAmbientThemeLoaded=!0;let r="luma-ambient-setup",n="luma-with-lyrics",o=3e3,i=3e4,s=()=>{try{return JSON.parse(localStorage.getItem(r)||"null")}catch{return null}},c=()=>{try{localStorage.setItem(r,JSON.stringify(l))}catch{}},l=s()||{lyrics:null,plus:!1,asked:!1},u=()=>!!(globalThis.LumaLyrics||document.getElementById("luma-root")||document.querySelector('button[aria-label="Luma Lyrics"], button[title="Luma Lyrics"]')),m=()=>!!(globalThis.LumaPlus||document.getElementById("luma-plus-style")),d=`
+/* Luma Ambient \u2014 keep a single lyrics button on the playbar.
+   Spotify's own lyrics control is hidden while Luma Lyrics provides the
+   lyrics UI. Luma's own toggle is excluded from every rule. */
+html.${n} button[data-testid="lyrics-button"]:not([aria-label="Luma Lyrics"]),
+html.${n} button[data-testid="lyrics-toggle-button"]:not([aria-label="Luma Lyrics"]),
+html.${n} .main-nowPlayingBar-lyricsButton:not([aria-label="Luma Lyrics"]),
+html.${n} button[title="Lyrics"]:not([aria-label="Luma Lyrics"]),
+html.${n} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics"]) {
+  display: none !important;
+}
+`;function y(){document.documentElement.classList.toggle(n,l.lyrics===!0);let I=document.getElementById("luma-ambient-setup-style");I||(I=document.createElement("style"),I.id="luma-ambient-setup-style",document.head.append(I)),I.textContent=l.lyrics===!0?d:"",l.plus&&void 0}function p(){}let f="data-luma-declutter",h=["Credits","On tour","Merch","Next in queue","Next up"],C=[["More like","more-like"],["Fans also like","fans-also-like"],["Based on your recent listening","recent-recommendations"]],x=I=>{for(let[S,F]of C)if(I===S||I.startsWith(`${S} `))return F;return null};function T(I,S){return I.getAttribute(f)===S?!1:(I.setAttribute(f,S),!0)}let g=".Root__right-sidebar, .Root__main-view, .Root__nav-bar, .main-nowPlayingBar-nowPlayingBar, .main-home-content, .Root__top-container, body, html";function M(I,S){let F=I,D=I.parentElement;for(let X=0;X<3&&D&&!(D.matches(g)||Array.from(D.childNodes).some(W=>W.nodeType===Node.TEXT_NODE?W.textContent.trim().length>0:W.nodeType!==Node.ELEMENT_NODE||W===F||getComputedStyle(W).display==="none"?!1:W.querySelector("img, canvas, svg, video, input, button, a")?!0:W.textContent.trim().length>0));X++)D.setAttribute(f,S),F=D,D=D.parentElement}function w(I,S){T(I,S)&&(M(I,S),console.info(`[Luma Ambient] decluttered: ${I.textContent.slice(0,60).trim()}\u2026`))}function H(){document.querySelectorAll('section[data-testid="component-shelf"]').forEach(I=>{let S=(I.getAttribute("aria-label")||"").trim(),F=I.querySelector("h1,h2,h3,h4,[role='heading']"),D=F?F.textContent.trim():"",X=x(S)||x(D);X&&w(I,`shelf:${X}`)})}function v(){let I=document.querySelector(".Root__right-sidebar")||document.querySelector(".NowPlayingView")||document.querySelector("[data-npv-root]");I&&I.querySelectorAll("h1,h2,h3,h4,[role='heading']").forEach(S=>{let F=S.textContent.trim();if(!h.includes(F))return;let D=S;for(let X=0;X<8&&D.parentElement&&(D=D.parentElement,D!==I);X++){let ut=typeof D.className=="string"?D.className:"",W=D.getAttribute("data-testid")||"";if((D.tagName==="SECTION"||D.tagName==="ARTICLE"||/nowPlayingView|npv/i.test(`${ut} ${W}`))&&!D.querySelector(".main-nowPlayingView-lyricsContent, .main-nowPlayingView-playerControls, .main-nowPlayingView-header, [data-testid='NPV_Lyrics']")){w(D,"npv");return}}})}function L(I,S){l.lyrics=I,l.asked=!0,m()&&(l.plus=!0),c(),y(),S(),I&&A()}function E(I=u()){Ht("Luma Ambient setup",(S,F)=>{S.innerHTML=`
+<h2>Luma Ambient</h2>
+<p>Is the Luma Lyrics extension installed? The theme adapts to match \u2014 for example, keeping a single lyrics button on the playbar.</p>
+<div class="luma-setup-hint${I?" visible":""}">Luma Lyrics detected</div>
+<div class="luma-setup-actions">
+  <button type="button" class="luma-setup-yes">Yes, it&rsquo;s installed</button>
+  <button type="button" class="luma-setup-no">Not yet</button>
+</div>`;let D=S.querySelector(".luma-setup-yes");D.addEventListener("click",()=>L(!0,F)),S.querySelector(".luma-setup-no").addEventListener("click",()=>L(!1,F)),D.focus()})}function A(){let I=u(),S=Date.now()+i,F=()=>{if(l.lyrics!==!0)return;if(u()){I||Ot("Luma Lyrics connected");return}if(Date.now()>S){l.lyrics=!1,c(),y(),Ot("Luma Lyrics not found \u2014 native lyrics button restored");return}setTimeout(F,1500)};setTimeout(F,2500)}let V=!1;function Y(){V||(V=!0,setTimeout(()=>{V=!1,H(),v(),u()&&l.lyrics!==!0&&(l.lyrics=!0,l.asked=!0,c(),y(),Ot("Luma Lyrics detected \u2014 Spotify's lyrics button hidden"));let S=m();S!==l.plus&&(l.plus=S,c(),y())},600))}if(l.asked)y();else{let I=Date.now()+o,S=u();for(;!S&&Date.now()<I;)await e(300),S=u();E(S)}let G=de(),_=".playback-bar, #luma-root, #luma-ambient-toast, #luma-ambient-scrim";new MutationObserver(I=>{for(let S of I){let F=S.target.nodeType===Node.ELEMENT_NODE?S.target:S.target.parentElement;if(!F||!F.closest(_)){Y();return}}}).observe(document.body,{childList:!0,subtree:!0}),setTimeout(()=>{H(),v()},1200),globalThis.LumaAmbient={version:"1.4.0",ask:()=>E(u()),reset:()=>{l={lyrics:null,plus:!1,asked:!1};try{localStorage.removeItem(r)}catch{}y(),E()},config:()=>({...l,detectedLyrics:u(),detectedPlus:m(),palette:G.get()}),palette:G},console.info("[Luma Ambient] theme.js 1.4.0 loaded. Palette: LumaAmbient.palette.open() \u2014 Luma Lyrics prompt: LumaAmbient.ask()")})();})();
+/*! Bundled license information:
 
-  let uiStyleInjected = false;
-  function injectUiStyle() {
-    if (uiStyleInjected) return;
-    uiStyleInjected = true;
-    const styleEl = document.createElement("style");
-    styleEl.id = "luma-ambient-setup-ui";
-    styleEl.textContent = UI_CSS;
-    document.head.append(styleEl);
-  }
+@material/material-color-utilities/utils/math_utils.js:
+@material/material-color-utilities/utils/color_utils.js:
+@material/material-color-utilities/hct/viewing_conditions.js:
+@material/material-color-utilities/hct/cam16.js:
+@material/material-color-utilities/hct/hct_solver.js:
+@material/material-color-utilities/hct/hct.js:
+@material/material-color-utilities/blend/blend.js:
+@material/material-color-utilities/palettes/tonal_palette.js:
+@material/material-color-utilities/palettes/core_palette.js:
+@material/material-color-utilities/quantize/lab_point_provider.js:
+@material/material-color-utilities/quantize/quantizer_wsmeans.js:
+@material/material-color-utilities/quantize/quantizer_map.js:
+@material/material-color-utilities/quantize/quantizer_wu.js:
+@material/material-color-utilities/quantize/quantizer_celebi.js:
+@material/material-color-utilities/scheme/scheme.js:
+@material/material-color-utilities/scheme/scheme_android.js:
+@material/material-color-utilities/score/score.js:
+@material/material-color-utilities/utils/string_utils.js:
+@material/material-color-utilities/utils/image_utils.js:
+@material/material-color-utilities/utils/theme_utils.js:
+@material/material-color-utilities/index.js:
+  (**
+   * @license
+   * Copyright 2021 Google LLC
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *      http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *)
 
-  let toastTimer = 0;
-  function showToast(message) {
-    injectUiStyle();
-    let toastEl = document.getElementById("luma-ambient-toast");
-    if (!toastEl) {
-      toastEl = document.createElement("div");
-      toastEl.id = "luma-ambient-toast";
-      document.body.append(toastEl);
-    }
-    toastEl.textContent = message;
-    toastEl.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2400);
-  }
+@material/material-color-utilities/contrast/contrast.js:
+@material/material-color-utilities/dynamiccolor/dynamic_color.js:
+@material/material-color-utilities/dynamiccolor/variant.js:
+@material/material-color-utilities/dynamiccolor/material_dynamic_colors.js:
+@material/material-color-utilities/dynamiccolor/dynamic_scheme.js:
+@material/material-color-utilities/scheme/scheme_expressive.js:
+@material/material-color-utilities/scheme/scheme_fruit_salad.js:
+@material/material-color-utilities/scheme/scheme_monochrome.js:
+@material/material-color-utilities/scheme/scheme_neutral.js:
+@material/material-color-utilities/scheme/scheme_rainbow.js:
+@material/material-color-utilities/scheme/scheme_tonal_spot.js:
+@material/material-color-utilities/scheme/scheme_vibrant.js:
+  (**
+   * @license
+   * Copyright 2022 Google LLC
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *      http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *)
 
-  let previousFocus = null;
-  function closeDialog() {
-    const scrim = document.getElementById("luma-ambient-scrim");
-    if (!scrim) return;
-    scrim.classList.remove("show");
-    const done = () => scrim.remove();
-    scrim.addEventListener("transitionend", done, { once: true });
-    setTimeout(done, 400); // reduced-motion fallback
-    document.removeEventListener("keydown", onDialogKeydown, true);
-    previousFocus?.focus?.();
-  }
-
-  function onDialogKeydown(e) {
-    if (e.key === "Escape") {
-      e.stopPropagation();
-      closeDialog(); // no answer saved; the prompt returns next launch
-    }
-  }
-
-  function answer(lyricsInstalled) {
-    state.lyrics = lyricsInstalled;
-    state.asked = true;
-    if (detectPlus()) state.plus = true;
-    saveState();
-    apply();
-    closeDialog();
-    if (lyricsInstalled) watchForLyrics();
-  }
-
-  function openDialog(detected = detectLyrics()) {
-    injectUiStyle();
-    if (document.getElementById("luma-ambient-scrim")) return;
-    previousFocus = document.activeElement;
-
-    const scrim = document.createElement("div");
-    scrim.id = "luma-ambient-scrim";
-    scrim.innerHTML = `
-<div class="luma-setup" role="dialog" aria-modal="true" aria-labelledby="luma-setup-title" aria-describedby="luma-setup-desc">
-  <h2 id="luma-setup-title">Luma Ambient</h2>
-  <p id="luma-setup-desc">Is the Luma Lyrics extension installed? The theme adapts to match — for example, keeping a single lyrics button on the playbar.</p>
-  <div class="luma-setup-hint${detected ? " visible" : ""}">Luma Lyrics detected</div>
-  <div class="luma-setup-actions">
-    <button type="button" class="luma-setup-yes">Yes, it&rsquo;s installed</button>
-    <button type="button" class="luma-setup-no">Not yet</button>
-  </div>
-</div>`;
-    document.body.append(scrim);
-    requestAnimationFrame(() => scrim.classList.add("show"));
-
-    scrim.querySelector(".luma-setup-yes").addEventListener("click", () => answer(true));
-    scrim.querySelector(".luma-setup-no").addEventListener("click", () => answer(false));
-    scrim.addEventListener("click", (e) => {
-      if (e.target === scrim) closeDialog(); // dismiss; asked again next launch
-    });
-    document.addEventListener("keydown", onDialogKeydown, true);
-    scrim.querySelector(".luma-setup-yes").focus();
-  }
-
-  // Safety net for a "yes" answer: if Luma Lyrics never shows up, restore
-  // Spotify's native lyrics button so lyrics stay reachable.
-  function watchForLyrics() {
-    let seen = detectLyrics();
-    const deadline = Date.now() + CONFIRM_WINDOW_MS;
-    const tick = () => {
-      if (state.lyrics !== true) return;
-      const found = detectLyrics();
-      if (found) {
-        if (!seen) showToast("Luma Lyrics connected");
-        return;
-      }
-      if (Date.now() > deadline) {
-        state.lyrics = false;
-        saveState();
-        apply();
-        showToast("Luma Lyrics not found — native lyrics button restored");
-        return;
-      }
-      setTimeout(tick, 1500);
-    };
-    setTimeout(tick, 2500);
-  }
-
-  // Keep the saved answers in step with reality: a later Luma Lyrics or
-  // Luma Plus install (or removal) updates the state without re-prompting.
-  let scanQueued = false;
-  function queueScan() {
-    if (scanQueued) return;
-    scanQueued = true;
-    setTimeout(() => {
-      scanQueued = false;
-      declutterShelves();
-      declutterNowPlaying();
-      const lyrics = detectLyrics();
-      if (lyrics && state.lyrics !== true) {
-        state.lyrics = true;
-        state.asked = true;
-        saveState();
-        apply();
-        showToast("Luma Lyrics detected — Spotify's lyrics button hidden");
-      }
-      const plus = detectPlus();
-      if (plus !== state.plus) {
-        state.plus = plus;
-        saveState();
-        apply();
-      }
-    }, 600);
-  }
-
-  // First run: give extensions a moment to load, then ask. Later runs:
-  // apply the saved answer quietly.
-  if (state.asked) {
-    apply();
-  } else {
-    const deadline = Date.now() + DETECT_GRACE_MS;
-    let detected = detectLyrics();
-    while (!detected && Date.now() < deadline) {
-      await wait(300);
-      detected = detectLyrics();
-    }
-    openDialog(detected);
-  }
-
-  new MutationObserver(queueScan).observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
-
-  // Catch the initial mount, then keep decluttering on DOM changes.
-  setTimeout(() => {
-    declutterShelves();
-    declutterNowPlaying();
-  }, 1200);
-
-  globalThis.LumaAmbient = {
-    version: "1.0.0",
-    ask: () => openDialog(detectLyrics()),
-    reset: () => {
-      state = { lyrics: null, plus: false, asked: false };
-      try {
-        localStorage.removeItem(KEY);
-      } catch {}
-      apply();
-      openDialog();
-    },
-    config: () => ({
-      ...state,
-      detectedLyrics: detectLyrics(),
-      detectedPlus: detectPlus(),
-    }),
-  };
-  console.info(
-    "[Luma Ambient] theme.js loaded. Reopen the setup prompt with LumaAmbient.ask()",
-  );
-})();
+@material/material-color-utilities/dislike/dislike_analyzer.js:
+@material/material-color-utilities/dynamiccolor/contrast_curve.js:
+@material/material-color-utilities/dynamiccolor/tone_delta_pair.js:
+@material/material-color-utilities/temperature/temperature_cache.js:
+@material/material-color-utilities/scheme/scheme_content.js:
+@material/material-color-utilities/scheme/scheme_fidelity.js:
+  (**
+   * @license
+   * Copyright 2023 Google LLC
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *      http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *)
+*/

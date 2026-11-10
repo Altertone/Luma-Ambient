@@ -1,0 +1,15 @@
+{
+  "name": "luma-ambient",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Material You theme for Spicetify",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test-palette.mjs"
+  },
+  "devDependencies": {
+    "@material/material-color-utilities": "^0.3.0",
+    "esbuild": "^0.25.0"
+  }
+}
