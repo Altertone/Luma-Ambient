@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Luma Ambient installer — theme + first-run companion extension in one step.
+# Luma Ambient installer — theme and theme script in one step.
 #
 # Usage:
 #   ./install.sh              install (or update) and apply
 #   ./install.sh --no-apply   install (or update) without running spicetify apply
+#   curl -fsSL https://raw.githubusercontent.com/Shahisha1/Luma-Ambient/main/install.sh | bash
 #
-# Safe to re-run: it simply overwrites the installed files with this copy.
+# When run from a checkout it installs that copy; when piped from curl it
+# downloads the theme files first (set LUMA_AMBIENT_REF to use another branch
+# or tag). Safe to re-run: it simply overwrites the installed files.
 set -euo pipefail
 
 NO_APPLY=false
@@ -27,11 +30,32 @@ fi
 CONFIG_PATH="$(spicetify -c)"
 CONFIG_DIR="$(dirname "$CONFIG_PATH")"
 THEMES_DIR="$CONFIG_DIR/Themes"
-EXTENSIONS_DIR="$CONFIG_DIR/Extensions"
-
-SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 THEME_FILES=(color.ini user.css declutter.css theme.js manifest.json preview.svg)
+
+# Prefer the folder this script lives in. When it is piped from curl there is
+# no script file (BASH_SOURCE is empty), so download the files instead.
+SRC_DIR=""
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+
+if [[ -z "$SRC_DIR" || ! -f "$SRC_DIR/user.css" ]]; then
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "error: curl is required to download the theme files." >&2
+    exit 1
+  fi
+  SRC_DIR="$(mktemp -d)"
+  trap 'rm -rf "$SRC_DIR"' EXIT
+  BASE_URL="https://raw.githubusercontent.com/Shahisha1/Luma-Ambient/${LUMA_AMBIENT_REF:-main}"
+  echo "Downloading Luma Ambient (${LUMA_AMBIENT_REF:-main})..."
+  for file in "${THEME_FILES[@]}"; do
+    if ! curl -fsSL "$BASE_URL/$file" -o "$SRC_DIR/$file"; then
+      echo "error: could not download $file from $BASE_URL" >&2
+      exit 1
+    fi
+  done
+fi
 
 for file in "${THEME_FILES[@]}"; do
   if [[ ! -f "$SRC_DIR/$file" ]]; then
@@ -63,6 +87,10 @@ echo "  $THEMES_DIR/Luma-Ambient"
 if $NO_APPLY; then
   echo "Skipped spicetify apply (--no-apply). Run it manually when ready."
 else
-  spicetify apply
+  # A first-time Spicetify setup has no backup yet, and apply refuses to run.
+  if ! spicetify apply; then
+    echo "spicetify apply failed; creating a backup and trying again..."
+    spicetify backup apply
+  fi
   echo "Done. The first-run prompt appears once on the next Spotify launch."
 fi
