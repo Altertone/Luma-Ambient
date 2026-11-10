@@ -772,6 +772,11 @@ section[data-testid="component-shelf"][aria-label^="More like "],
   display: var(--ambient-home-more-like, var(--luma-declutter-shelves, none)) !important;
 }
 
+section[data-testid="component-shelf"][aria-label^="For fans of "],
+[data-luma-declutter="shelf:for-fans-of"] {
+  display: var(--ambient-home-for-fans-of, var(--luma-declutter-shelves, none)) !important;
+}
+
 section[data-testid="component-shelf"][aria-label^="Fans also like "],
 [data-luma-declutter="shelf:fans-also-like"] {
   display: var(--ambient-home-fans-also-like, var(--luma-declutter-shelves, none)) !important;
@@ -792,6 +797,17 @@ section[data-testid="component-shelf"][aria-label$="Best of artists"],
 section[data-testid="component-shelf"][aria-label^="Bringing together the top songs"],
 [data-luma-declutter="shelf:best-of-artists"] {
   display: var(--ambient-home-best-of-artists, var(--luma-declutter-shelves, none)) !important;
+}
+
+/* The unlabeled recommendation grid at the bottom of Home: a section whose
+   aria-label is missing or empty holding a card grid (mixes, radios, "Based
+   on your recent listening" picks). The labeled shelves and the "Good
+   morning" shortcuts have a non-empty aria-label, so they stay visible. */
+.main-home-content
+  > section:where(:not([data-testid="component-shelf"])):is(
+    :not([aria-label]), [aria-label=""]
+  ):has(.main-gridContainer-gridContainer) {
+  display: var(--ambient-home-preview-grid, var(--luma-declutter-shelves, none)) !important;
 }
 
 section[data-testid="component-shelf"][aria-label^="Popular with listeners "],

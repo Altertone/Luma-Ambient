@@ -143,11 +143,13 @@ To show sections again, add variables to the end of `user.css` and run `spicetif
   --ambient-home-made-for-you: block;
   --ambient-home-more-like: block;
   --ambient-home-fans-also-like: block;
+  --ambient-home-for-fans-of: block;
   --ambient-home-recent-recommendations: block;
   --ambient-home-recommended-stations: block;
   --ambient-home-albums-for-you: block;
   --ambient-home-popular-listeners: block;
   --ambient-home-best-of-artists: block;
+  --ambient-home-preview-grid: block;
 }
 ```
 

@@ -116,6 +116,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   // Weeknd", "Made For  Sasha"), so prefixes — not exact labels.
   const SHELF_PREFIXES = [
     ["More like", "more-like"],
+    ["For fans of", "for-fans-of"],
     ["Fans also like", "fans-also-like"],
     ["Based on your recent listening", "recent-recommendations"],
     ["Made for", "made-for-you"],
@@ -187,6 +188,18 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
         const key = shelfKey(label) || shelfKey(text);
         if (key) declutter(shelf, `shelf:${key}`);
       });
+    // The unlabeled recommendation grid at the bottom of Home ("Based on
+    // your recent listening" mixes, radios, and editorial picks). It has no
+    // meaningful aria-label or testid, so it is recognized by its shape: a
+    // section whose aria-label is missing or empty, holding a card grid.
+    for (const section of document.querySelectorAll(
+      ".main-home-content > section",
+    )) {
+      if (section.getAttribute("data-testid") === "component-shelf") continue;
+      if ((section.getAttribute("aria-label") || "").trim()) continue;
+      if (!section.querySelector(".main-gridContainer-gridContainer")) continue;
+      declutter(section, "shelf:preview-grid");
+    }
   }
 
   // Never hide a block containing the lyrics preview, cover art, or player
