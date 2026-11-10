@@ -113,7 +113,14 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   // Marks wrappers that were tagged only because they were (transiently)
   // empty; revived by the scanner when real content appears inside them.
   const COLLAPSED = "data-luma-collapsed";
-  const NPV_LABELS = ["Credits", "On tour", "Merch", "Next in queue", "Next up"];
+  const NPV_LABELS = [
+    "Credits",
+    "On tour",
+    "Merch",
+    "Next in queue",
+    "Next up",
+    "About the artist",
+  ];
   // Matched against the shelf's aria-label/heading, case-insensitively.
   // Personalized shelves embed the artist or user name ("More like  The
   // Weeknd", "Made For  Sasha"), so prefixes — not exact labels.

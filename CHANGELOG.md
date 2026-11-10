@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.3 — 2026-11-10
+
+- The About the artist block is now decluttered along with Credits, On tour, Merch, and Next in queue (restorable with `--luma-declutter-npv: block`). The panel now holds only the header, artwork, track info, player controls, and lyrics preview.
+- Pairs with Luma Lyrics 2.3.1: the playbar toggle no longer mounts inside Spotify's queue button container (where the two icons stacked flush); it appears beside it as its own block.
+
 ## 1.4.2 — 2026-11-10
 
 - Fixed over-hiding in the Now Playing panel: collapsing the empty wrappers a hidden section leaves behind could tag a wrapper while its (lazily mounted) content — lyrics preview, about-the-artist — had not appeared yet, permanently hiding whole blocks below the cover art. Collapsed wrappers are now marked and self-heal: each scan re-checks them and removes the tag as soon as real content shows up inside.
