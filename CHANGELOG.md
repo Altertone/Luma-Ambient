@@ -4,7 +4,7 @@
 
 - Fixed the theme script and stylesheet for Spotify client 1.3.8: the Now Playing view now renders inside the `Root__right-sidebar-peek` family instead of `.Root__right-sidebar`, so the script's panel lookup (and several stylesheet rules) found nothing and decluttering silently did nothing.
 - The Now Playing sections are now recognized by their `section`/`article` element or a `-npv-section` testid, up to ten wrapper levels deep, with obfuscated client class names. New safety rails: a tagged block must not contain the lyrics preview (`lyrics-npv-section`), cover art, or player controls, and must not stack several headed sections.
-- Recommendation shelves are matched by case-insensitive prefix so labels that embed a name ("More like  The Weeknd", "Made For  Sasha") still hide; "Made for you" becomes the `Made For`/`Made for` prefixes. Four more personalized shelves are hidden by default with their own restore variables: Recommended Stations, Popular with listeners, Albums featuring songs you like, and the Made For shelves.
+- Recommendation shelves are matched by case-insensitive prefix so labels that embed a name ("More like  The Weeknd", "Made For  Sasha") still hide; "Made for you" becomes the `Made For`/`Made for` prefixes. Five more personalized shelves are hidden by default with their own restore variables: Recommended Stations, Popular with listeners, Albums featuring songs you like, Best of artists (the "This Is …" carousels), and the Made For shelves.
 - Concert and shop link hiding, the right-sidebar surface color, and the sidebar scoping rule now also cover the peek-sidebar markup.
 - Verified live against the running client through its DevTools protocol.
 

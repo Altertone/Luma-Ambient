@@ -122,6 +122,8 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     ["Made For", "made-for-you"],
     ["Recommended Stations", "recommended-stations"],
     ["Popular with listeners", "popular-listeners"],
+    ["Best of artists", "best-of-artists"],
+    ["Bringing together the top songs from an artist", "best-of-artists"],
     ["Albums featuring songs you like", "albums-for-you"],
   ];
 

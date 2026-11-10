@@ -787,6 +787,13 @@ section[data-testid="component-shelf"][aria-label="Albums featuring songs you li
   display: var(--ambient-home-albums-for-you, var(--luma-declutter-shelves, none)) !important;
 }
 
+/* "This Is ..." artist essentials carousel ("Best of artists"). */
+section[data-testid="component-shelf"][aria-label$="Best of artists"],
+section[data-testid="component-shelf"][aria-label^="Bringing together the top songs"],
+[data-luma-declutter="shelf:best-of-artists"] {
+  display: var(--ambient-home-best-of-artists, var(--luma-declutter-shelves, none)) !important;
+}
+
 section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
 [data-luma-declutter="shelf:popular-listeners"] {
   display: var(--ambient-home-popular-listeners, var(--luma-declutter-shelves, none)) !important;
