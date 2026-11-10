@@ -16,5 +16,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: luma-ambient-built-theme
+          path: theme.js
+          if-no-files-found: error
       - run: npm test
       - run: git diff --exit-code -- theme.js
