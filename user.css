@@ -821,82 +821,6 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
 }
 
 /* --------------------------------------------------------------------------
-   Library sidebar — category rows and the filter bar
-   The theme script reads each list row's Spotify URI from its aria-labelledby
-   ("listrow-title-spotify:artist:<id>") and tags the row
-   data-luma-lib="<group>". That works on every client build and interface
-   language: no hashed classes and no localized label text are involved.
-   Collapsed groups are listed, space-separated, in
-   data-luma-lib-collapsed on <html>; the filter bar the script renders above
-   the list toggles them (Artists start collapsed).
-   -------------------------------------------------------------------------- */
-[data-luma-lib-collapsed~="playlist"] [data-luma-lib="playlist"],
-[data-luma-lib-collapsed~="album"] [data-luma-lib="album"],
-[data-luma-lib-collapsed~="artist"] [data-luma-lib="artist"],
-[data-luma-lib-collapsed~="podcasts"] [data-luma-lib="podcasts"],
-[data-luma-lib-collapsed~="audiobooks"] [data-luma-lib="audiobooks"],
-[data-luma-lib-collapsed~="liked"] [data-luma-lib="liked"],
-[data-luma-lib-collapsed~="other"] [data-luma-lib="other"] {
-  display: var(--luma-lib-collapsed, none) !important;
-}
-
-#luma-lib-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 6px 8px 4px;
-}
-
-#luma-lib-filter [data-luma-lib-toggle] {
-  font-size: 11px;
-  line-height: 1;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--md-outline-variant);
-  background: transparent;
-  color: var(--md-on-surface-variant);
-  cursor: pointer;
-  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
-}
-
-#luma-lib-filter [data-luma-lib-toggle]:hover {
-  background: var(--md-state-hover);
-  color: var(--md-on-surface);
-}
-
-/* Pressed = the group is collapsed (its rows are hidden). */
-#luma-lib-filter [aria-pressed="true"] {
-  background: color-mix(in srgb, var(--md-primary) 18%, transparent);
-  border-color: transparent;
-  color: var(--md-primary);
-}
-
-#luma-lib-filter [data-luma-lib-toggle]:focus-visible {
-  outline: 2px solid var(--md-primary);
-  outline-offset: 2px;
-}
-
-/* The Artists pill is a launcher, not a toggle: it opens the artist
-   gallery page (a full overlay the theme script builds). */
-#luma-lib-filter .luma-lib-gallery {
-  font-size: 11px;
-  line-height: 1;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: color-mix(in srgb, var(--md-primary) 18%, transparent);
-  color: var(--md-primary);
-  cursor: pointer;
-  transition: background-color 140ms ease, color 140ms ease, filter 140ms ease;
-}
-
-#luma-lib-filter .luma-lib-gallery:hover {
-  filter: brightness(1.1);
-  background: color-mix(in srgb, var(--md-primary) 26%, transparent);
-  color: var(--md-primary);
-}
-
-/* --------------------------------------------------------------------------
    Artist gallery — the full-screen overlay page (#luma-artists)
    The theme script builds the dialog, card grid, filter input, and close
    button; this decides how they look (M3 tokens from the palette). Artists
@@ -1181,10 +1105,23 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
   display: var(--luma-declutter-artist, none) !important;
 }
 
+/* Long artist names clamp to two lines with an ellipsis (Spotify's
+   -webkit-line-clamp on the adaptive title). Show the whole name. */
+.main-entityHeader-title,
+.main-entityHeader-title [data-encore-id="adaptiveTitle"] {
+  overflow: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  height: auto !important;
+  -webkit-line-clamp: unset !important;
+  text-overflow: unset !important;
+}
+
+/* World-rank badge: sits beside the verified badge in the header. */
 .luma-artist-rank {
   display: inline-flex;
   align-items: center;
-  margin-top: 2px;
+  margin-left: 10px;
   padding: 4px 12px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--md-primary) 16%, transparent);
@@ -1192,6 +1129,7 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
   font-size: 12px;
   font-weight: 620;
   letter-spacing: 0.01em;
+  vertical-align: middle;
 }
 
 /* --------------------------------------------------------------------------

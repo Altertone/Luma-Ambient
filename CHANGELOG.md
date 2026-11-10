@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.7 — 2026-11-10
+
+- **Sidebar pills removed.** The library category filter bar (and the Artists gallery launcher pill) is gone; the sidebar is back to stock. The artist gallery itself stays, now opened from the console (`LumaAmbient.artists()`).
+- **Artist page: more sections removed, name always fully visible, rank beside the verified badge.** Merch, On tour, Featuring … and Discovered on are now decluttered along with About (restorable with `--luma-declutter-artist: block`). The "#N in the world" badge moved from under the listeners count to sit directly beside the "Verified by Spotify" badge. Long artist names no longer clamp to two lines with an ellipsis — the whole name shows.
+
 ## 1.4.6 — 2026-11-10
 
 - **Artist page decluttered.** Merch, On tour and About are removed from the artist screen (restorable with `--luma-declutter-artist: block`). The world rank ("#2 in the world") lives inside About on client 1.3.8, so the theme copies it into the page header as a badge before hiding the section — the monthly-listeners count already sits there.

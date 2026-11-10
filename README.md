@@ -123,9 +123,8 @@ If a track has no extractable artwork (local files, some podcasts), the last pal
 By default the theme removes:
 
 - **Now Playing sidebar:** Credits, On tour, Merch, Next in queue, About the artist (the player, lyrics preview and header are never touched).
-- **Artist pages:** Merch, On tour and About the artist — but the "#N in the world" rank is copied into the artist header first, so nothing is lost. Restores with `--luma-declutter-artist: block`.
+- **Artist pages:** Merch, On tour, Featuring …, Discovered on and About the artist — but the "#N in the world" rank is copied into the artist header first, so nothing is lost. Restores with `--luma-declutter-artist: block`.
 - **Home shelves:** Your top mixes, Made for you, More like …, Fans also like, Based on your recent listening. Your shortcut grid, **Your shows** and **Recents** stay.
-- **Library sidebar:** category toggles (see below); artists show as a gallery page instead of sidebar rows.
 
 `theme.js` finds these sections by reading their headings and tags them (together with any empty wrappers they leave behind), so a Spotify markup change cannot blank a panel; `user.css` decides whether a tagged section is visible. Section matching uses Spotify's English headings, so in other languages the sections stay visible. The console logs each hidden section as `[Luma Ambient] decluttered: …`.
 
@@ -158,23 +157,9 @@ To show sections again, add variables to the end of `user.css` and run `spicetif
 
 Set only the variables for what you want to show; remove them to hide the sections again. Both kinds of variable work for every section, and the per-section one wins. Spotify may change its headings and labels between client versions.
 
-## Library sidebar categories
-
-The library list is grouped by item type. Every list row is labeled with a Spotify URI (`listrow-title-spotify:artist:<id>` inside its `aria-labelledby`), so the theme script classifies each row from that URI alone — no hashed class names, no localized heading text — which keeps the feature working on any client build and in any interface language.
-
-Each row is tagged `data-luma-lib="playlist|album|artist|podcasts|liked|audiobooks|other"`. The pill bar under the "Your Library" header toggles whole groups: Playlists, Albums, Podcasts, Liked and Audiobooks collapse with one click (the pill reads *pressed* while a group is hidden). Collapsed groups persist between launches, and the grouping is restorable wholesale:
-
-```css
-:root {
-  --luma-lib-collapsed: block; /* show every library row again */
-}
-```
-
 ## Artist gallery
 
-Artists are not collapsed in the sidebar anymore — they get their own page instead. The **Artists** pill opens a full-screen gallery of every followed artist as circular cards grouped under letter headers ("A", "B", …), fetched from Spotify's own LibraryAPI (so it lists the entire library, not just the rows currently rendered), filterable through the search box. Hovering a card surfaces a play button; clicking the card opens the artist's page. It can also be opened from the console with `LumaAmbient.artists()`.
-
-The rows themselves are never moved: the library grid is virtualized, so only visibility changes.
+Every followed artist is available as a full-screen gallery page: circular cards grouped under letter headers ("A", "B", …), fetched from Spotify's own LibraryAPI (so it lists the entire library, not just the rows the sidebar renders), filterable through the search box. Hovering a card surfaces a play button; clicking the card opens the artist's page. Open it from the console with `LumaAmbient.artists()`.
 
 ## Optional decluttering
 

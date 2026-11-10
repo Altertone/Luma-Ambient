@@ -10,8 +10,7 @@
  * whole library — unlike the sidebar grid, which only renders a scrolled
  * window of rows. Results are cached for ~5 minutes.
  *
- * The sidebar's "Artists" pill opens this gallery instead of toggling rows.
- * Console: LumaAmbient.artists() — reopen it manually.
+ * The gallery is opened from the console (LumaAmbient.artists()).
  */
 const CACHE_MS = 5 * 60 * 1000;
 
@@ -311,16 +310,9 @@ export function createArtistGallery(onCountChanged = () => {}) {
     lastFocus?.focus?.();
   }
 
-  // The library pill wants a lifetime total without having to open the
-  // gallery: warm the cache shortly after startup.
-  function warmCount() {
-    loadArtists().catch(() => {});
-  }
-
   return {
     open,
     close,
-    warmCount,
     count: () => data.count,
   };
 }
