@@ -876,6 +876,216 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
   outline-offset: 2px;
 }
 
+/* The Artists pill is a launcher, not a toggle: it opens the artist
+   gallery page (a full overlay the theme script builds). */
+#luma-lib-filter .luma-lib-gallery {
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--md-primary) 18%, transparent);
+  color: var(--md-primary);
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease, filter 140ms ease;
+}
+
+#luma-lib-filter .luma-lib-gallery:hover {
+  filter: brightness(1.1);
+  background: color-mix(in srgb, var(--md-primary) 26%, transparent);
+  color: var(--md-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Artist gallery — the full-screen overlay page (#luma-artists)
+   The theme script builds the dialog, card grid, filter input, and close
+   button; this decides how they look (M3 tokens from the palette). Artists
+   show as circular avatar cards; clicking one opens their page.
+   -------------------------------------------------------------------------- */
+#luma-artists {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#luma-artists[hidden] {
+  display: none !important;
+}
+
+#luma-artists .luma-artists-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(9 8 13 / 0.6);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+}
+
+#luma-artists .luma-artists-panel {
+  position: relative;
+  width: min(1180px, 94vw);
+  height: min(86vh, 900px);
+  display: flex;
+  flex-direction: column;
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 24px;
+  box-shadow: var(--md-elevation-3);
+  color: var(--md-on-surface);
+  overflow: hidden;
+}
+
+#luma-artists .luma-artists-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+#luma-artists h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+}
+
+#luma-artists .luma-artists-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  margin-left: 6px;
+}
+
+#luma-artists .luma-artists-filter {
+  flex: 1;
+  max-width: 340px;
+  margin-left: auto;
+  padding: 8px 16px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  font-size: 13px;
+}
+
+#luma-artists .luma-artists-filter::placeholder {
+  color: var(--md-on-surface-variant);
+}
+
+#luma-artists .luma-artists-close {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--md-on-surface);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color 140ms ease, transform 140ms ease;
+}
+
+#luma-artists .luma-artists-close:hover {
+  background: var(--md-state-hover);
+  transform: translateY(-1px);
+}
+
+#luma-artists .luma-artists-grid {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 16px 10px;
+  padding: 20px 22px 28px;
+  align-content: start;
+}
+
+#luma-artists .luma-artists-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 16px;
+  font: inherit;
+}
+
+#luma-artists .luma-artists-picture {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+#luma-artists .luma-artists-picture img,
+#luma-artists .luma-artists-initial {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#luma-artists .luma-artists-initial {
+  display: grid;
+  place-items: center;
+  font-size: 34px;
+  font-weight: 640;
+  color: var(--md-on-primary);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--md-primary) 80%, var(--md-on-surface) 20%),
+    color-mix(in srgb, var(--md-primary) 40%, var(--md-surface-container-highest) 60%)
+  );
+}
+
+#luma-artists .luma-artists-card:hover .luma-artists-picture,
+#luma-artists .luma-artists-card:focus-visible .luma-artists-picture {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--md-primary) 25%, rgb(0 0 0 / 0.4));
+}
+
+#luma-artists .luma-artists-name {
+  max-width: 112px;
+  font-size: 13px;
+  font-weight: 560;
+  line-height: 1.25;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--md-on-surface-variant);
+  transition: color 140ms ease;
+}
+
+#luma-artists .luma-artists-card:hover .luma-artists-name {
+  color: var(--md-primary);
+}
+
+#luma-artists .luma-artists-card:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+#luma-artists .luma-artists-status {
+  padding: 28px 22px;
+  color: var(--md-on-surface-variant);
+  font-size: 14px;
+}
+
 /* --------------------------------------------------------------------------
    Luma Lyrics integration
    Luma Lyrics creates its own #luma-root overlay and injects its own styles.
@@ -1058,5 +1268,10 @@ section[data-testid="component-shelf"][aria-label^="Popular with listeners "],
   #luma-root .bar .tool,
   #luma-root .controls button {
     transition: none !important;
+  }
+  #luma-artists .luma-artists-picture,
+  #luma-artists .luma-artists-name,
+  #luma-artists .luma-artists-close {
+    transition: none;
   }
 }

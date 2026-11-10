@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.5 — 2026-11-10
+
+- **Artist gallery page.** The library bar's Artists pill opens a full-screen overlay page showing every artist in the library as a circular card grid — the whole library, not just the rows the sidebar happens to render (it reads Spotify's LibraryAPI with the Artists filter and paginates). A filter box narrows the grid as you type; clicking a card opens that artist's page; Esc, ✕ or the scrim close it; the count updates on the pill after the first fetch. Console: `LumaAmbient.artists()`. Restorable styling is plain M3 tokens; rows in the sidebar are never moved.
+- The Artists pill no longer toggles artist rows in the sidebar (it became the gallery launcher); Playlists, Albums, Podcasts and Liked rows keep their collapse toggles, and a previously saved "collapse artists" setting is migrated away. Sidebar artist rows are visible again by default.
+
 ## 1.4.4 — 2026-11-10
 
 - **Library sidebar categories.** Every library row is classified from the Spotify URI inside its `aria-labelledby` (`spotify:playlist:…`, `spotify:artist:…`, …) — no hashed classes and no localized labels, so it works on any client build and language. Rows are tagged `data-luma-lib="<group>"`, and a pill bar under the "Your Library" header collapses whole groups: Artists start hidden and open with one click; Playlists, Albums, Podcasts and more can be toggled the same way. Group state persists across launches and is restorable with `--luma-lib-collapsed: block` in `user.css`. Rows are never moved (the grid is virtualized) — only visibility changes.

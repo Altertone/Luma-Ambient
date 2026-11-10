@@ -20,6 +20,7 @@
  * This file is built from src/ — edit the sources and run `npm run build`.
  */
 import { createPaletteEngine } from "./engine.js";
+import { createArtistGallery } from "./artists.js";
 import { openModal, showToast } from "./ui.js";
 
 (async function lumaAmbient() {
@@ -51,6 +52,17 @@ import { openModal, showToast } from "./ui.js";
 
   // lyrics: true (installed), false (not installed), null (not answered yet)
   let state = loadState() || { lyrics: null, plus: false, asked: false };
+
+  // 1.4.5: the artists sidebar group became the artist gallery, so a saved
+  // "collapse artists" choice no longer applies.
+  if (Array.isArray(state.libHidden) && state.libHidden.includes("artist")) {
+    state.libHidden = state.libHidden.filter((group) => group !== "artist");
+    saveState();
+  }
+
+  // Artist gallery (sidebar pill + LumaAmbient.artists()); the bar refreshes
+  // once the total artist count is known.
+  const artistGallery = createArtistGallery(() => queueScan());
 
   const detectLyrics = () =>
     Boolean(
@@ -282,7 +294,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
      (artists start collapsed). Groups persist in the setup state.
      -------------------------------------------------------------------------- */
   const LIB_TAG = "data-luma-lib";
-  const DEFAULT_LIB_HIDDEN = ["artist"];
+  const DEFAULT_LIB_HIDDEN = [];
   // URI type → display group ("show" and "episode" are both podcasts,
   // "collection" is Liked Songs, "audiobook"/"book" are audiobooks).
   const LIB_GROUPS = {
@@ -352,11 +364,15 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       if (row.getAttribute(LIB_TAG) !== group) row.setAttribute(LIB_TAG, group);
       counts[group] = (counts[group] || 0) + 1;
     }
-    // Render only the group pills; totals use everything seen this session,
-    // so counts hold still while the row window scrolls.
-    const groups = Object.keys(counts).sort();
+    // Render only the group pills plus the Artists gallery launcher (artist
+    // rows stay in the list; the gallery is their dedicated page). Totals
+    // use everything seen this session so counts hold still while the row
+    // window scrolls.
+    const groups = Object.keys(counts)
+      .filter((group) => group !== "artist")
+      .sort();
     const hidden = [...libHidden()];
-    const sig = JSON.stringify({ groups, counts, hidden });
+    const sig = JSON.stringify({ groups, counts, hidden, gallery: artistGallery.count() });
     let bar = document.getElementById("luma-lib-filter");
     if (bar && bar.dataset.lumaSig === sig) return;
     if (!bar) {
@@ -383,6 +399,18 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       if (hidden.includes(group)) button.setAttribute("aria-pressed", "true");
       bar.append(button);
     }
+    // Opens the artist gallery page as its own view instead of toggling
+    // match-anything rows in this narrow list.
+    const gallery = document.createElement("button");
+    gallery.type = "button";
+    gallery.className = "luma-lib-gallery";
+    gallery.dataset.lumaGallery = "";
+    gallery.setAttribute("aria-label", "Open the artist gallery");
+    gallery.textContent = `Artists${
+      artistGallery.count() ? ` ${artistGallery.count()}` : ""
+    }`;
+    gallery.addEventListener("click", () => artistGallery.open());
+    bar.append(gallery);
     bar.dataset.lumaSig = sig;
     const header = grid.previousElementSibling;
     if (header !== bar) grid.parentElement.insertBefore(bar, grid);
@@ -543,7 +571,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
   // Spotify rewrites the progress bar and time labels every second, and Luma
   // Lyrics re-renders its overlay continuously; neither can add a section we
   // care about, so mutations inside them do not trigger a scan.
-  const QUIET = ".playback-bar, #luma-root, #luma-ambient-toast, #luma-ambient-scrim, #luma-lib-filter";
+  const QUIET = ".playback-bar, #luma-root, #luma-ambient-toast, #luma-ambient-scrim, #luma-lib-filter, #luma-artists";
   new MutationObserver((records) => {
     for (const record of records) {
       const target =
@@ -562,10 +590,13 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     declutterShelves();
     declutterNowPlaying();
     organizeLibrary();
+    // Warm the gallery's artist count so the sidebar pill can show it.
+    artistGallery.warmCount();
   }, 1200);
 
   globalThis.LumaAmbient = {
     version: __LUMA_AMBIENT_VERSION__,
+    artists: () => artistGallery.open(),
     ask: () => openDialog(detectLyrics()),
     reset: () => {
       state = { lyrics: null, plus: false, asked: false };

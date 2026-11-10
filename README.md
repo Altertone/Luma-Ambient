@@ -160,15 +160,11 @@ Set only the variables for what you want to show; remove them to hide the sectio
 
 The library list is grouped by item type. Every list row is labeled with a Spotify URI (`listrow-title-spotify:artist:<id>` inside its `aria-labelledby`), so the theme script classifies each row from that URI alone — no hashed class names, no localized heading text — which keeps the feature working on any client build and in any interface language.
 
-Each row is tagged `data-luma-lib="playlist|album|artist|podcasts|liked|audiobooks|other"`, and a small pill bar rendered under the "Your Library" header toggles whole groups: click **Artists** to show the artists again, click it once more to collapse them (the pill reads *pressed* while a group is hidden). Artists start collapsed — there can be hundreds, and they crowd out playlists and albums. The counts reflect everything the library contains, not just the rows currently rendered.
+Each row is tagged `data-luma-lib="playlist|album|artist|podcasts|liked|audiobooks|other"`. The pill bar under the "Your Library" header toggles whole groups: Playlists, Albums, Podcasts, Liked and Audiobooks collapse with one click (the pill reads *pressed* while a group is hidden). Collapsed groups persist between launches.
 
-Collapsed groups persist between launches in the theme's setup state, and the grouping is restorable wholesale by forcing the tagged rows visible again:
+## Artist gallery
 
-```css
-:root {
-  --luma-lib-collapsed: block; /* show every library row again */
-}
-```
+Artists are not collapsed in the sidebar anymore — they get their own page instead. The **Artists** pill opens a full-screen gallery of every followed artist as circular cards, fetched from Spotify's own LibraryAPI (so it lists the entire library, not just the rows currently rendered), sortable through the filter box, and one click deep-links into the artist's page. It can also be opened from the console with `LumaAmbient.artists()`.
 
 The rows themselves are never moved: the library grid is virtualized, so only visibility changes.
 
