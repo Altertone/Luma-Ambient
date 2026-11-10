@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.4.0 — 2026-11-10
+
+- Added a generated Material You palette. `theme.js` now builds the complete Material 3 role set from the playing track's artwork (or a custom color) with Google's Material Color Utilities and applies it to the `--md-*` variables and the legacy `--spice-*` keys, including primary/secondary/tertiary/error containers, five surface container levels, outline, inverse and fixed roles. Text and background pairs meet 4.5:1 contrast in every style.
+- Added nine palette styles (tonal spot, vibrant, expressive, neutral, monochrome, fidelity, content, fruit salad, rainbow), dark, light and match-system appearance, and a contrast control. Settings are in Spotify's profile menu (**Luma Ambient palette**) and `LumaAmbient.palette`.
+- Colors now cross-fade when the track changes; disabled when reduced motion is requested.
+- `color.ini` and the `--md-*` values in `user.css` remain the static fallback ("Theme scheme only"), and Luma Lyrics' Desktop colors keep working.
+- Moved the theme script into `src/` with a small build (`npm run build`, `npm test`). The built `theme.js` stays committed, so installing still needs no build.
+- Unified the decluttering variables. `theme.js` now tags sections and `user.css` decides visibility, so each section can be restored with its own variable or its group variable (`--luma-declutter-npv`, `--luma-declutter-shelves`). Previously restoring a shelf also required the group variable. Added `--ambient-home-fans-also-like`.
+- Fixed the one-line `curl | bash` install, which exited with an error. The installers now download the theme files when piped, and create a Spicetify backup when the first apply fails.
+- Fixed the compact-spacing block in `declutter.css`, which styled an element the theme hides.
+- Playbar icons now match buttons by `data-testid` as well as label, and handle shuffle and repeat states, repeat-one, mute, and a filled liked heart.
+- Scoped the global dialog and alert styling so extension overlays and Luma Ambient's own dialog are not restyled.
+- The theme script no longer rescans on every progress-bar update or lyrics re-render, and processes each decluttered section once.
+- `theme.js` reports the real version.
+
 ## 1.3.0 — 2026-11-10
 
 - Rebuilt the theme as a full Material You (Material 3) design system: `color.ini` now defines the complete role set (surface-container levels, primary/secondary/tertiary containers, outlines, inverse roles, scrim) per scheme, mapped onto `--md-*` tokens.

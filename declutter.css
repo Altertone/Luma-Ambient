@@ -6,7 +6,7 @@
   row-gap: 16px;
 }
 
-.Root__main-view .main-home-homeHeader {
-  padding-block-end: 12px;
+.Root__main-view .main-home-content > section {
+  margin-block-end: var(--md-space-2, 8px);
 }
 /* LUMA DECLUTTER END */

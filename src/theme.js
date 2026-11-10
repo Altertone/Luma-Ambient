@@ -1,0 +1,355 @@
+/* Luma Ambient — theme script.
+ *
+ * Injected by Spicetify alongside user.css when `inject_theme_js` is enabled
+ * (same mechanism the Comfy theme uses). It:
+ *   - generates the Material 3 palette from the playing track (see engine.js),
+ *   - asks once whether the Luma Lyrics extension is installed and adapts a
+ *     few UI details to the answer (for example, hiding Spotify's native
+ *     lyrics button so the playbar keeps a single lyrics toggle),
+ *   - tags clutter sections so user.css can hide them.
+ *
+ * Luma Lyrics and Luma Plus are detected automatically afterwards; the saved
+ * answer is corrected silently if reality changes.
+ *
+ * Console API (mirrors Comfy's window.Comfy):
+ *   LumaAmbient.ask()      — reopen the Luma Lyrics prompt
+ *   LumaAmbient.reset()    — forget the saved answer and reopen the prompt
+ *   LumaAmbient.config()
+ *   LumaAmbient.palette    — .open() .get() .set({...}) .reset()
+ *
+ * This file is built from src/ — edit the sources and run `npm run build`.
+ */
+import { createPaletteEngine } from "./engine.js";
+import { openModal, showToast } from "./ui.js";
+
+(async function lumaAmbient() {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  while (!(globalThis.Spicetify && document.body)) {
+    setTimeout(lumaAmbient, 10);
+    return;
+  }
+  if (globalThis.__lumaAmbientThemeLoaded) return;
+  globalThis.__lumaAmbientThemeLoaded = true;
+
+  const KEY = "luma-ambient-setup";
+  const CLASS_LYRICS = "luma-with-lyrics";
+  const DETECT_GRACE_MS = 3000; // how long to look for Luma Lyrics before asking
+  const CONFIRM_WINDOW_MS = 30000; // how long to keep looking after a "yes"
+
+  const loadState = () => {
+    try {
+      return JSON.parse(localStorage.getItem(KEY) || "null");
+    } catch {
+      return null;
+    }
+  };
+  const saveState = () => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch {}
+  };
+
+  // lyrics: true (installed), false (not installed), null (not answered yet)
+  let state = loadState() || { lyrics: null, plus: false, asked: false };
+
+  const detectLyrics = () =>
+    Boolean(
+      globalThis.LumaLyrics ||
+        document.getElementById("luma-root") ||
+        document.querySelector(
+          'button[aria-label="Luma Lyrics"], button[title="Luma Lyrics"]',
+        ),
+    );
+  const detectPlus = () =>
+    Boolean(globalThis.LumaPlus || document.getElementById("luma-plus-style"));
+
+  const HIDE_RULES = `
+/* Luma Ambient — keep a single lyrics button on the playbar.
+   Spotify's own lyrics control is hidden while Luma Lyrics provides the
+   lyrics UI. Luma's own toggle is excluded from every rule. */
+html.${CLASS_LYRICS} button[data-testid="lyrics-button"]:not([aria-label="Luma Lyrics"]),
+html.${CLASS_LYRICS} button[data-testid="lyrics-toggle-button"]:not([aria-label="Luma Lyrics"]),
+html.${CLASS_LYRICS} .main-nowPlayingBar-lyricsButton:not([aria-label="Luma Lyrics"]),
+html.${CLASS_LYRICS} button[title="Lyrics"]:not([aria-label="Luma Lyrics"]),
+html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics"]) {
+  display: none !important;
+}
+`;
+
+  function apply() {
+    document.documentElement.classList.toggle(
+      CLASS_LYRICS,
+      state.lyrics === true,
+    );
+    let styleEl = document.getElementById("luma-ambient-setup-style");
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = "luma-ambient-setup-style";
+      document.head.append(styleEl);
+    }
+    styleEl.textContent = state.lyrics === true ? HIDE_RULES : "";
+    if (state.plus) applyPlus();
+  }
+
+  // Reserved for future Luma Plus-specific adjustments. Detection and the
+  // saved flag are already wired; add rules here as they are needed.
+  function applyPlus() {}
+
+  /* --------------------------------------------------------------------------
+     Decluttering (text-based, markup-tolerant)
+     CSS cannot match elements by their heading text, and Spotify's Now Playing
+     panel markup keeps shifting, so this script finds the sections by reading
+     their headings and tags them with data-luma-declutter. user.css decides
+     whether a tagged section is visible, which keeps one set of override
+     variables for everything (see the README):
+
+       :root { --luma-declutter-npv: block; --luma-declutter-shelves: block; }
+       :root { --ambient-home-more-like: block; }   (one shelf only)
+
+     Nothing structural is hidden — only the section that owns the heading,
+     and never the lyrics, player, or panel header.
+     -------------------------------------------------------------------------- */
+  const TAG = "data-luma-declutter";
+  const NPV_LABELS = ["Credits", "On tour", "Merch", "Next in queue", "Next up"];
+  const SHELF_PREFIXES = [
+    ["More like", "more-like"],
+    ["Fans also like", "fans-also-like"],
+    ["Based on your recent listening", "recent-recommendations"],
+  ];
+
+  const shelfKey = (text) => {
+    for (const [prefix, key] of SHELF_PREFIXES) {
+      if (text === prefix || text.startsWith(`${prefix} `)) return key;
+    }
+    return null;
+  };
+
+  // Returns true only the first time an element receives a given tag, so each
+  // section is processed (and logged) once however often the DOM changes.
+  function tag(el, value) {
+    if (el.getAttribute(TAG) === value) return false;
+    el.setAttribute(TAG, value);
+    return true;
+  }
+
+  // After a section is hidden, tag the wrappers it left behind so the block
+  // disappears entirely instead of leaving an empty gap. Never climbs into
+  // layout roots, and stops as soon as a parent still has content. Wrappers
+  // get the same tag as the section, so they follow the same override.
+  const LAYOUT_ROOTS =
+    ".Root__right-sidebar, .Root__main-view, .Root__nav-bar, .main-nowPlayingBar-nowPlayingBar, .main-home-content, .Root__top-container, body, html";
+
+  function collapseEmptyParents(el, value) {
+    let hiddenEl = el;
+    let parent = el.parentElement;
+    for (let depth = 0; depth < 3 && parent; depth++) {
+      if (parent.matches(LAYOUT_ROOTS)) break;
+      const hasVisibleContent = Array.from(parent.childNodes).some((node) => {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent.trim().length > 0;
+        if (node.nodeType !== Node.ELEMENT_NODE || node === hiddenEl) return false;
+        if (getComputedStyle(node).display === "none") return false;
+        if (node.querySelector("img, canvas, svg, video, input, button, a")) return true;
+        return node.textContent.trim().length > 0;
+      });
+      if (hasVisibleContent) break;
+      parent.setAttribute(TAG, value);
+      hiddenEl = parent;
+      parent = parent.parentElement;
+    }
+  }
+
+  function declutter(el, value) {
+    if (!tag(el, value)) return;
+    collapseEmptyParents(el, value);
+    console.info(`[Luma Ambient] decluttered: ${el.textContent.slice(0, 60).trim()}…`);
+  }
+
+  function declutterShelves() {
+    document
+      .querySelectorAll('section[data-testid="component-shelf"]')
+      .forEach((shelf) => {
+        const label = (shelf.getAttribute("aria-label") || "").trim();
+        const heading = shelf.querySelector("h1,h2,h3,h4,[role='heading']");
+        const text = heading ? heading.textContent.trim() : "";
+        const key = shelfKey(label) || shelfKey(text);
+        if (key) declutter(shelf, `shelf:${key}`);
+      });
+  }
+
+  function declutterNowPlaying() {
+    const scope =
+      document.querySelector(".Root__right-sidebar") ||
+      document.querySelector(".NowPlayingView") ||
+      document.querySelector("[data-npv-root]");
+    if (!scope) return;
+
+    scope.querySelectorAll("h1,h2,h3,h4,[role='heading']").forEach((heading) => {
+      const text = heading.textContent.trim();
+      if (!NPV_LABELS.includes(text)) return;
+
+      let el = heading;
+      for (let depth = 0; depth < 8 && el.parentElement; depth++) {
+        el = el.parentElement;
+        if (el === scope) break;
+        const cls = typeof el.className === "string" ? el.className : "";
+        const testid = el.getAttribute("data-testid") || "";
+        const isSection =
+          el.tagName === "SECTION" ||
+          el.tagName === "ARTICLE" ||
+          /nowPlayingView|npv/i.test(`${cls} ${testid}`);
+        if (!isSection) continue;
+
+        // Safety: never hide the lyrics preview, player controls, or header.
+        if (
+          el.querySelector(
+            ".main-nowPlayingView-lyricsContent, .main-nowPlayingView-playerControls, .main-nowPlayingView-header, [data-testid='NPV_Lyrics']",
+          )
+        )
+          continue;
+
+        declutter(el, "npv");
+        return;
+      }
+    });
+  }
+
+  function answer(lyricsInstalled, close) {
+    state.lyrics = lyricsInstalled;
+    state.asked = true;
+    if (detectPlus()) state.plus = true;
+    saveState();
+    apply();
+    close();
+    if (lyricsInstalled) watchForLyrics();
+  }
+
+  function openDialog(detected = detectLyrics()) {
+    openModal("Luma Ambient setup", (box, close) => {
+      box.innerHTML = `
+<h2>Luma Ambient</h2>
+<p>Is the Luma Lyrics extension installed? The theme adapts to match — for example, keeping a single lyrics button on the playbar.</p>
+<div class="luma-setup-hint${detected ? " visible" : ""}">Luma Lyrics detected</div>
+<div class="luma-setup-actions">
+  <button type="button" class="luma-setup-yes">Yes, it&rsquo;s installed</button>
+  <button type="button" class="luma-setup-no">Not yet</button>
+</div>`;
+      const yes = box.querySelector(".luma-setup-yes");
+      yes.addEventListener("click", () => answer(true, close));
+      box.querySelector(".luma-setup-no").addEventListener("click", () => answer(false, close));
+      yes.focus(); // dismissing leaves no answer saved; the prompt returns next launch
+    });
+  }
+
+  // Safety net for a "yes" answer: if Luma Lyrics never shows up, restore
+  // Spotify's native lyrics button so lyrics stay reachable.
+  function watchForLyrics() {
+    let seen = detectLyrics();
+    const deadline = Date.now() + CONFIRM_WINDOW_MS;
+    const tick = () => {
+      if (state.lyrics !== true) return;
+      const found = detectLyrics();
+      if (found) {
+        if (!seen) showToast("Luma Lyrics connected");
+        return;
+      }
+      if (Date.now() > deadline) {
+        state.lyrics = false;
+        saveState();
+        apply();
+        showToast("Luma Lyrics not found — native lyrics button restored");
+        return;
+      }
+      setTimeout(tick, 1500);
+    };
+    setTimeout(tick, 2500);
+  }
+
+  // Keep the saved answers in step with reality: a later Luma Lyrics or
+  // Luma Plus install (or removal) updates the state without re-prompting.
+  let scanQueued = false;
+  function queueScan() {
+    if (scanQueued) return;
+    scanQueued = true;
+    setTimeout(() => {
+      scanQueued = false;
+      declutterShelves();
+      declutterNowPlaying();
+      const lyrics = detectLyrics();
+      if (lyrics && state.lyrics !== true) {
+        state.lyrics = true;
+        state.asked = true;
+        saveState();
+        apply();
+        showToast("Luma Lyrics detected — Spotify's lyrics button hidden");
+      }
+      const plus = detectPlus();
+      if (plus !== state.plus) {
+        state.plus = plus;
+        saveState();
+        apply();
+      }
+    }, 600);
+  }
+
+  // First run: give extensions a moment to load, then ask. Later runs:
+  // apply the saved answer quietly.
+  if (state.asked) {
+    apply();
+  } else {
+    const deadline = Date.now() + DETECT_GRACE_MS;
+    let detected = detectLyrics();
+    while (!detected && Date.now() < deadline) {
+      await wait(300);
+      detected = detectLyrics();
+    }
+    openDialog(detected);
+  }
+
+  const palette = createPaletteEngine();
+
+  // Spotify rewrites the progress bar and time labels every second, and Luma
+  // Lyrics re-renders its overlay continuously; neither can add a section we
+  // care about, so mutations inside them do not trigger a scan.
+  const QUIET = ".playback-bar, #luma-root, #luma-ambient-toast, #luma-ambient-scrim";
+  new MutationObserver((records) => {
+    for (const record of records) {
+      const target =
+        record.target.nodeType === Node.ELEMENT_NODE
+          ? record.target
+          : record.target.parentElement;
+      if (!target || !target.closest(QUIET)) {
+        queueScan();
+        return;
+      }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+
+  // Catch the initial mount, then keep decluttering on DOM changes.
+  setTimeout(() => {
+    declutterShelves();
+    declutterNowPlaying();
+  }, 1200);
+
+  globalThis.LumaAmbient = {
+    version: __LUMA_AMBIENT_VERSION__,
+    ask: () => openDialog(detectLyrics()),
+    reset: () => {
+      state = { lyrics: null, plus: false, asked: false };
+      try {
+        localStorage.removeItem(KEY);
+      } catch {}
+      apply();
+      openDialog();
+    },
+    config: () => ({
+      ...state,
+      detectedLyrics: detectLyrics(),
+      detectedPlus: detectPlus(),
+      palette: palette.get(),
+    }),
+    palette,
+  };
+  console.info(
+    `[Luma Ambient] theme.js ${__LUMA_AMBIENT_VERSION__} loaded. Palette: LumaAmbient.palette.open() — Luma Lyrics prompt: LumaAmbient.ask()`,
+  );
+})();

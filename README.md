@@ -8,7 +8,9 @@ Luma Ambient is a standalone Spicetify theme with built-in, automatically applie
 
 - Full Material You (Material 3) design system: tonal surface roles, state layers, shape scale, and elevation — flat surfaces, no gradients.
 - Two coordinated schemes: **Ambient** and **Ambient Soft**.
-- Artwork-reactive Material You colors from Luma Lyrics when its **Desktop colors** setting is enabled; both schemes remain the standalone fallback.
+- A generated Material You palette: the full Material 3 role set is built from the playing track's artwork (or a color you choose), with nine palette styles, light and dark appearance, and adjustable contrast. See [Material You palette](#material-you-palette).
+- Colors cross-fade when the track changes (disabled when reduced motion is requested).
+- Luma Lyrics' **Desktop colors** palette still works; both schemes remain the standalone fallback.
 - Material Symbols Rounded icons for labelled playback controls.
 - A minimal Now Playing sidebar that preserves the player and lyrics preview; Credits, On tour, Merch, and Next in queue are removed entirely (including leftover wrappers).
 - Home keeps your shortcut grid, followed shows, and Recents while removing the recommendation shelves; each shelf has an independent visibility control.
@@ -84,47 +86,68 @@ If you prefer no prompt at all, delete `theme.js` from the installed theme folde
 
 `color.ini` defines a full Material 3 role set per scheme (`surface`, `surface-container-*`, `on-surface*`, `primary`, `primary-container`, `secondary`, `tertiary`, `error`, `outline*`, `inverse-*`, `scrim`, …). `user.css` maps them onto `--md-*` tokens used by every surface, and also keeps the legacy Spicetify aliases (`--spice-main`, `--spice-sidebar`, `--spice-player`, `--spice-card`, `--spice-button`, `--spice-text`, `--spice-subtext`, …) so existing customizations and Luma Lyrics' **Desktop colors** mapping keep working — the artwork palette drives the main surfaces automatically.
 
+`color.ini` and the `--md-*` values in `user.css` are the static fallback; with the palette source set to *Album artwork* or *Custom color* they are overridden at runtime by the generated palette.
+
 State layers (hover/pressed/selected), the shape scale (`--md-shape-xs/sm/md/lg/xl`), spacing, elevation, and the font stack are all tokens, so a scheme can be re-skinned by editing `color.ini` alone.
 
-## Minimal Now Playing sidebar
+## Material You palette
 
-The theme preserves the current track/player area and Spotify's lyrics preview. The theme script removes the **Credits**, **On tour**, **Merch**, and **Next in queue** sections entirely — including the wrappers they leave behind — by matching their headings, so a Spotify markup change cannot blank the panel. The lyrics preview, player, and panel header are never touched. Concert and shop links are hidden in CSS as a fallback.
+`theme.js` generates the complete Material 3 color role set — primary, secondary, tertiary and error with their containers, five surface container levels, outline and inverse roles, and the fixed roles — using Google's [Material Color Utilities](https://github.com/material-foundation/material-color-utilities) (the HCT color space). The result is applied as the `--md-*` variables, and as the legacy `--spice-*` keys that native Spotify surfaces read.
 
-To show the sections again, add this to the end of `user.css` and run `spicetify apply`:
+Open the settings from Spotify's profile menu (**Luma Ambient palette**) or run `LumaAmbient.palette.open()` in the console. Changes apply immediately and are remembered.
 
-```css
-:root { --luma-declutter-npv: block; }
+| Setting | Options |
+|---|---|
+| Color source | **Album artwork** (the seed is the current track's cover colors, taken with Spicetify's color extractor), **Custom color**, or **Theme scheme only** (nothing is generated; `color.ini` and Luma Lyrics' Desktop colors apply as before) |
+| Style | Tonal spot, Vibrant, Expressive, Neutral, Monochrome, Fidelity, Content, Fruit salad, Rainbow |
+| Appearance | Dark, Light, Match system |
+| Contrast | Reduced, Standard, Medium, High |
+
+The same settings are available from the console:
+
+```js
+LumaAmbient.palette.set({ variant: "vibrant", mode: "auto" });
+LumaAmbient.palette.set({ source: "custom", seed: "#6750a4" });
+LumaAmbient.palette.get();     // current settings
+LumaAmbient.palette.reset();   // back to the defaults
 ```
 
-### Decluttering opt-outs
+If a track has no extractable artwork (local files, some podcasts), the last palette is kept.
 
-The theme script also removes the **More like …**, **Fans also like**, and **Based on your recent listening** shelves on Home. Restore a group with:
+**Luma Lyrics.** Luma Lyrics' **Desktop colors** also writes the `--spice-*` keys, so with the source set to *Album artwork* whichever of the two updates last wins. To let Luma Lyrics drive the colors, set the source to *Theme scheme only*.
+
+**Light appearance** is new: a few fixed-dark details (the Luma Lyrics overlay shade and some shadows) are not retuned for it yet.
+
+## Hiding and restoring sections
+
+By default the theme removes:
+
+- **Now Playing sidebar:** Credits, On tour, Merch, Next in queue (the player, lyrics preview and header are never touched).
+- **Home shelves:** Your top mixes, Made for you, More like …, Fans also like, Based on your recent listening. Your shortcut grid, **Your shows** and **Recents** stay.
+
+`theme.js` finds these sections by reading their headings and tags them (together with any empty wrappers they leave behind), so a Spotify markup change cannot blank a panel; `user.css` decides whether a tagged section is visible. Section matching uses Spotify's English headings, so in other languages the sections stay visible. The console logs each hidden section as `[Luma Ambient] decluttered: …`.
+
+To show sections again, add variables to the end of `user.css` and run `spicetify apply`. A group variable restores everything in the group, and a per-section variable restores just one:
 
 ```css
 :root {
-  --luma-declutter-npv: block;
-  --luma-declutter-shelves: block;
+  --luma-declutter-npv: block;      /* Credits, On tour, Merch, Next in queue */
+  --luma-declutter-shelves: block;  /* every hidden Home shelf */
 }
 ```
 
-The console logs each hidden section as `[Luma Ambient] decluttered: …` so you can confirm what was removed.
-
-## Home recommendation visibility
-
-Home selectors use Spotify's accessible shelf labels. The current theme hides **Your top mixes**, **Made for you**, **More like …**, and **Based on your recent listening** shelves by default. It leaves your shortcut grid, **Your shows**, and **Recents** visible.
-
-To restore a shelf, add the matching setting at the end of `user.css` and run `spicetify apply`:
-
 ```css
 :root {
+  --ambient-sidebar-hidden: block;                  /* concert and shop links */
   --ambient-home-top-mixes: block;
   --ambient-home-made-for-you: block;
   --ambient-home-more-like: block;
+  --ambient-home-fans-also-like: block;
   --ambient-home-recent-recommendations: block;
 }
 ```
 
-Set only the variables for shelves you want to show. Remove the override to hide them again. Spotify may change its accessible shelf labels between client versions.
+Set only the variables for what you want to show; remove them to hide the sections again. Both kinds of variable work for every section, and the per-section one wins. Spotify may change its headings and labels between client versions.
 
 ## Optional decluttering
 
@@ -139,7 +162,7 @@ Luma Ambient includes a dedicated styling layer for your [Luma Lyrics](https://g
 ### What the integration changes
 
 - Styles the Luma Lyrics toolbar, player controls, settings panel, form controls, and lyric typography.
-- Luma Lyrics derives a tonal palette from the current artwork and publishes it through Spotify's `--spice-*` color variables when Desktop colors is enabled. Luma Ambient uses those variables for the app surfaces, player, selection and hover states, and accent. Its selected `color.ini` scheme remains the fallback when Desktop colors is off.
+- Luma Lyrics derives a tonal palette from the current artwork and publishes it through Spotify's `--spice-*` color variables when Desktop colors is enabled. With the palette source set to *Theme scheme only*, Luma Ambient uses those variables for the app surfaces, player, selection and hover states, and accent; its selected `color.ini` scheme remains the fallback when Desktop colors is off. With the default *Album artwork* source, Luma Ambient generates the full palette itself (see [Material You palette](#material-you-palette)).
 - To enable the shared desktop palette, open Luma Lyrics settings and turn on **Desktop colors**. The theme follows the extension's setting rather than reading its private palette variables directly.
 - Keeps the extension's own artwork backdrop, lyric timing, word-by-word highlighting, scroll behavior, translations, romanization, and player logic intact.
 - Requires the Luma Lyrics **Desktop colors** setting for artwork colors to appear in Spotify; lyrics overlay styling works independently.
@@ -170,11 +193,12 @@ The following checks are required before calling a release fully verified. They 
 
 | Area | Standalone: both schemes | Luma Ambient + Luma Lyrics |
 |---|---|---|
+| Palette | Each source, each style, dark/light/system, contrast levels; colors change with the track; the settings dialog opens from the profile menu | Check which palette wins with Desktop colors on, and that *Theme scheme only* hands control back |
 | Home | Check spacing, cards, headings, scroll | Check Spotify shell and return from lyrics |
 | Search | Check search field, results, filters | Check search and navigation remain unaffected |
 | Playlists | Check headers, rows, selected/hover states | Check playlist content and controls remain unaffected |
 | Library | Check navigation, filters, saved items | Check sidebar and library interactions remain unaffected |
-| Playback | Check play/pause, seek, volume, queue, device controls | Check extension transport and Spotify player controls |
+| Playback | Check play/pause, seek, volume, queue, device controls; every playbar icon (play/pause, previous/next, shuffle, repeat and repeat-one, like and liked, volume and mute) shows the Material glyph | Check extension transport and Spotify player controls |
 | Lyrics | Not a built-in Luma feature | Check overlay, word/line/gentle/static modes, translation, romanization, artwork-reactive Material 3 desktop colors, and settings |
 | Now Playing sidebar | Check player and lyrics preview remain; concert/shop links are hidden | Check the same minimal sidebar and confirm artwork palette updates |
 | Accessibility | Keyboard focus, contrast, reduced motion | Check overlay focus, contrast, reduced motion, and keyboard operation |
@@ -193,19 +217,36 @@ Also verify Spotify's current client version and Spicetify version after every m
 - `color.ini` — Spicetify color schemes.
 - `user.css` — standalone theme styling and design tokens.
 - `declutter.css` — optional compact-spacing add-on.
-- `theme.js` — first-run setup script, injected with `inject_theme_js 1` (see "First-run setup").
+- `theme.js` — built theme script (palette engine and first-run setup), injected with `inject_theme_js 1`. Generated from `src/`; do not edit by hand.
+- `src/` — sources for `theme.js`: `palette.js` (Material 3 palette generation), `engine.js` (applies the palette and the settings dialog), `ui.js` (shared dialog and toast), `theme.js` (entry point, setup prompt and decluttering).
+- `scripts/` — `build.mjs` bundles `src/` into `theme.js`; `test-palette.mjs` checks the generated palettes.
+- `package.json` — development scripts and dependencies (not needed to install the theme).
 - `install.sh`, `install.ps1` — one-step installer; `uninstall.sh`, `uninstall.ps1` remove the theme.
 - `manifest.json` — Spicetify Marketplace-style theme metadata.
 - `preview.svg` — illustrative preview.
 
+## Development
+
+The installed theme needs no build step: `theme.js` is generated and committed. To change the script, edit the files in `src/` and rebuild:
+
+```bash
+npm install
+npm run build   # bundles src/ into theme.js
+npm test        # palette checks: every role, text contrast, config handling
+```
+
+Commit `src/` and the rebuilt `theme.js` together.
+
 ## Version
 
-Current development version: **1.3.0**.
+Current development version: **1.4.0**.
 
 See [CHANGELOG.md](CHANGELOG.md) for changes.
 
 ## License and attribution
 
 No license file was present in the original repository, so this update does not assign a new license or claim MIT licensing. Until the repository owner adds an explicit license, the source remains under the default copyright terms. Luma Lyrics remains a separate extension; this theme only supplies scoped CSS styling and does not bundle or redistribute its code.
+
+`theme.js` bundles [Material Color Utilities](https://github.com/material-foundation/material-color-utilities) by Google LLC, which is licensed under the Apache License 2.0; its notice is kept at the end of the built file.
 
 Spotify is a trademark of Spotify AB. Spicetify is an independent community project.
