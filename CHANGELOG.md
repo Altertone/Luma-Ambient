@@ -1,9 +1,15 @@
 # Changelog
 
+## 1.4.2 — 2026-11-10
+
+- Fixed over-hiding in the Now Playing panel: collapsing the empty wrappers a hidden section leaves behind could tag a wrapper while its (lazily mounted) content — lyrics preview, about-the-artist — had not appeared yet, permanently hiding whole blocks below the cover art. Collapsed wrappers are now marked and self-heal: each scan re-checks them and removes the tag as soon as real content shows up inside.
+- Fixed the On tour section, which client 1.3.8 renders without a dedicated `section` element: the fallback now marks the smallest wrapper holding a single clutter heading plus real content (the heading's own container is recognized by its exact text, so title-only wrappers are never tagged). Merch (image cards) was already caught; On tour's text-based concert rows are too.
+
 ## 1.4.1 — 2026-11-10
 
 - Fixed the theme script and stylesheet for Spotify client 1.3.8: the Now Playing view now renders inside the `Root__right-sidebar-peek` family instead of `.Root__right-sidebar`, so the script's panel lookup (and several stylesheet rules) found nothing and decluttering silently did nothing.
-- The Now Playing sections are now recognized by their `section`/`article` element or a `-npv-section` testid, up to ten wrapper levels deep, with obfuscated client class names. New safety rails: a tagged block must not contain the lyrics preview (`lyrics-npv-section`), cover art, or player controls, and must not stack several headed sections.
+- The Now Playing sections are now recognized by their `section`/`article` element or a `-npv-section` testid, up to ten wrapper levels deep, with obfuscated client class names. Sections without a dedicated container (On tour, Merch on client 1.3.8+) fall back to the smallest wrapper that owns a single clutter heading, contains real card content, and none of the protected targets. Safety rails: a tagged block must not contain the lyrics preview (`lyrics-npv-section`), cover art, or player controls, and must not stack several headed sections.
+- The empty-wrapper collapse is self-healing: collapsed wrappers are marked and re-checked on every scan, so lazily mounted content (lyrics preview, about-the-artist) revives a wrapper that was tagged while still empty.
 - Recommendation shelves are matched by case-insensitive prefix so labels that embed a name ("More like  The Weeknd", "Made For  Sasha") still hide; "Made for you" becomes the `Made For`/`Made for` prefixes. Hidden by default with their own restore variables: the Made For shelves, Recommended Stations, Popular with listeners, More like / For fans of / Fans also like, Albums featuring songs you like, Best of artists (the "This Is …" carousels), the labeled "Based on your recent listening" shelf, and the unlabeled bottom recommendation grid (`--ambient-home-preview-grid`).
 - Concert and shop link hiding, the right-sidebar surface color, and the sidebar scoping rule now also cover the peek-sidebar markup.
 - Verified live against the running client through its DevTools protocol.

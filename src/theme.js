@@ -110,6 +110,9 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
      and never the lyrics, player, or panel header.
      -------------------------------------------------------------------------- */
   const TAG = "data-luma-declutter";
+  // Marks wrappers that were tagged only because they were (transiently)
+  // empty; revived by the scanner when real content appears inside them.
+  const COLLAPSED = "data-luma-collapsed";
   const NPV_LABELS = ["Credits", "On tour", "Merch", "Next in queue", "Next up"];
   // Matched against the shelf's aria-label/heading, case-insensitively.
   // Personalized shelves embed the artist or user name ("More like  The
@@ -147,10 +150,33 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     return true;
   }
 
+  // A node is empty if it renders no text and no media/controls, ignoring
+  // nodes whose computed display is none (already-hidden decluttered items)
+  // and the element we just hid. Checked recursively: a wrapper whose only
+  // content is a hidden subtree still counts as empty — but NOT while
+  // anything inside can still mount, see reviveCollapsed().
+  function isEmptyIgnoringHidden(el, skip) {
+    for (const node of el.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (node.textContent.trim().length > 0) return false;
+        continue;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE || node === skip) continue;
+      if (getComputedStyle(node).display === "none") continue;
+      if (node.querySelector("img, canvas, svg, video, input, button, a")) return false;
+      if (node.textContent.trim().length > 0) return false;
+      if (!isEmptyIgnoringHidden(node, node)) return false;
+    }
+    return true;
+  }
+
   // After a section is hidden, tag the wrappers it left behind so the block
   // disappears entirely instead of leaving an empty gap. Never climbs into
   // layout roots, and stops as soon as a parent still has content. Wrappers
-  // get the same tag as the section, so they follow the same override.
+  // get the same tag as the section, so they follow the same override, plus
+  // the collapse marker: Spotify mounts whole sections lazily, so a wrapper
+  // that is empty NOW may hold visible content a moment later. The scanner
+  // re-checks collapsed wrappers and revives them once content appears.
   const LAYOUT_ROOTS = "[class*='Root__right-sidebar'], .Root__right-sidebar, .Root__main-view, .Root__nav-bar, .main-nowPlayingBar-nowPlayingBar, .main-home-content, .Root__top-container, body, html";
 
   function collapseEmptyParents(el, value) {
@@ -158,17 +184,20 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     let parent = el.parentElement;
     for (let depth = 0; depth < 3 && parent; depth++) {
       if (parent.matches(LAYOUT_ROOTS)) break;
-      const hasVisibleContent = Array.from(parent.childNodes).some((node) => {
-        if (node.nodeType === Node.TEXT_NODE) return node.textContent.trim().length > 0;
-        if (node.nodeType !== Node.ELEMENT_NODE || node === hiddenEl) return false;
-        if (getComputedStyle(node).display === "none") return false;
-        if (node.querySelector("img, canvas, svg, video, input, button, a")) return true;
-        return node.textContent.trim().length > 0;
-      });
-      if (hasVisibleContent) break;
+      if (!isEmptyIgnoringHidden(parent, hiddenEl)) break;
       parent.setAttribute(TAG, value);
+      parent.setAttribute(COLLAPSED, "");
       hiddenEl = parent;
       parent = parent.parentElement;
+    }
+  }
+
+  function reviveCollapsed() {
+    for (const wrapper of document.querySelectorAll(`[${COLLAPSED}]`)) {
+      if (!isEmptyIgnoringHidden(wrapper, null)) {
+        wrapper.removeAttribute(TAG);
+        wrapper.removeAttribute(COLLAPSED);
+      }
     }
   }
 
@@ -227,35 +256,65 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
     scope.querySelectorAll("h1,h2,h3,h4,[role='heading']").forEach((heading) => {
       const text = heading.textContent.trim();
       if (!NPV_LABELS.includes(text)) return;
-
-      let el = heading;
-      for (let depth = 0; depth < 10 && el.parentElement; depth++) {
-        el = el.parentElement;
-        if (el === scope) break;
-        const cls = typeof el.className === "string" ? el.className : "";
-        const testid = el.getAttribute("data-testid") || "";
-        const isSection =
-          el.tagName === "SECTION" ||
-          el.tagName === "ARTICLE" ||
-          testid.endsWith("-npv-section") ||
-          /nowPlayingView|npv/i.test(`${cls} ${testid}`);
-        if (!isSection) continue;
-
-        // Safety: never hide anything with lyrics, cover art, or player
-        // controls inside, and never a wrapper that stacks several of the
-        // clutter sections (each section is tagged separately).
-        if (
-          el.querySelector(NPV_SAFE) ||
-          el.querySelectorAll(
-            "h1,h2,h3,h4,[role='heading']",
-          ).length > 1
-        )
-          return;
-
-        declutter(el, "npv");
-        return;
-      }
+      if (tagSection(heading, scope)) return;
+      tagByShape(heading, scope);
     });
+  }
+
+  const NPV_LABEL_HEADINGS =
+    "h1,h2,h3,h4,[role='heading']";
+  const clutterHeadings = (el) =>
+    [...el.querySelectorAll(NPV_LABEL_HEADINGS)].filter((h) =>
+      NPV_LABELS.includes(h.textContent.trim()),
+    ).length;
+
+  // Preferred path: tag the dedicated section element (client-provided
+  // section/article or a *-npv-section testid).
+  function tagSection(heading, scope) {
+    let el = heading;
+    for (let depth = 0; depth < 10 && el.parentElement; depth++) {
+      el = el.parentElement;
+      if (el === scope) return false;
+      const cls = typeof el.className === "string" ? el.className : "";
+      const testid = el.getAttribute("data-testid") || "";
+      const isSection =
+        el.tagName === "SECTION" ||
+        el.tagName === "ARTICLE" ||
+        testid.endsWith("-npv-section") ||
+        /nowPlayingView|npv/i.test(`${cls} ${testid}`);
+      if (!isSection) continue;
+
+      // Safety: never hide anything with lyrics, cover art, or player
+      // controls inside, and never a wrapper that stacks several of the
+      // clutter sections (each section is tagged separately). Other
+      // headings do not count — e.g. an On tour section lists venue names.
+      if (el.querySelector(NPV_SAFE) || clutterHeadings(el) > 1) return false;
+
+      declutter(el, "npv");
+      return true;
+    }
+    return false;
+  }
+
+  // Fallback for sections without a dedicated container (client 1.3.8+
+  // renders On tour/Merch as nested divs/asides): tag the smallest ancestor
+  // that owns exactly one clutter heading, holds real content beyond that
+  // heading, and nothing protected. The heading's own container (title plus
+  // expand chevron) has the heading's exact text, so climbing stops at the
+  // first ancestor whose text reaches beyond it — the section boundary.
+  function tagByShape(heading, scope) {
+    const text = heading.textContent.replace(/\s+/g, " ").trim();
+    let el = heading;
+    for (let depth = 0; depth < 12 && el.parentElement; depth++) {
+      el = el.parentElement;
+      if (el === scope || el.matches(LAYOUT_ROOTS)) return false;
+      if (el.textContent.replace(/\s+/g, " ").trim() === text) continue;
+      if (clutterHeadings(el) > 1) return false;
+      if (el.querySelector(NPV_SAFE)) return false;
+      declutter(el, "npv");
+      return true;
+    }
+    return false;
   }
 
   function answer(lyricsInstalled, close) {
@@ -319,6 +378,7 @@ html.${CLASS_LYRICS} button[aria-label*="lyrics" i]:not([aria-label="Luma Lyrics
       scanQueued = false;
       declutterShelves();
       declutterNowPlaying();
+      reviveCollapsed();
       const lyrics = detectLyrics();
       if (lyrics && state.lyrics !== true) {
         state.lyrics = true;
